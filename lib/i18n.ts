@@ -188,66 +188,6 @@ export const dictionary = {
                 },
             ],
         },
-        about: {
-            title: "About EnjoyTyping",
-            welcome: "Welcome to EnjoyTyping, the platform designed to transform the way you learn touch typing.",
-            missionTitle: "Our Mission",
-            mission: "Our mission is simple: to help users of all ages and skill levels master keyboard fluency in both Thai and English. Whether you are a student, a professional, or just someone looking to improve your digital literacy.",
-            whyTitle: "Why We Built This",
-            why: "Traditional typing tutors can be dull and repetitive. We built EnjoyTyping to bring modern design principles, real-time analytics, and gamified elements into the mix to keep you motivated.",
-        },
-        contact: {
-            title: "Contact Us",
-            description: "Have questions, suggestions, or feedback? We'd love to hear from you. Reach out to us directly and we'll get back to you as soon as possible.",
-            emailTitle: "Email Us",
-            emailDesc: "Direct support & inquiries",
-        },
-        privacy: {
-            title: "Privacy Policy",
-            lastUpdated: "Last updated: February 2026",
-            intro: "At EnjoyTyping, we value your privacy and are committed to protecting your personal information. This Privacy Policy explains how we collect and use your data.",
-            sections: [
-                {
-                    title: "1. Information We Collect",
-                    content: "We may collect non-personal identification information about Users whenever they interact with our Site, including browser name and technical information.",
-                },
-                {
-                    title: "2. How We Use Your Information",
-                    content: "We may use the information we collect to improve our website, personalize your experience, and send periodic emails if you have opted in.",
-                },
-                {
-                    title: "3. Data Security",
-                    content: "We adopt appropriate data collection, storage, and processing practices and security measures to protect against unauthorized access or disclosure of your personal information.",
-                },
-                {
-                    title: "4. Contact Us",
-                    content: "If you have any questions about this Privacy Policy, please contact us at: pathaphibn@gmail.com",
-                },
-            ],
-        },
-        terms: {
-            title: "Terms of Service",
-            lastUpdated: "Last updated: February 2026",
-            intro: "Please read these Terms of Service carefully before using the EnjoyTyping website. By accessing or using the Service, you agree to be bound by these Terms.",
-            sections: [
-                {
-                    title: "1. Use of Service",
-                    content: "EnjoyTyping provides a platform for typing practice. You agree to use the service for personal, non-commercial purposes and in compliance with all laws.",
-                },
-                {
-                    title: "2. Intellectual Property",
-                    content: "The Service and its original content, features, and functionality are and will remain the exclusive property of EnjoyTyping.",
-                },
-                {
-                    title: "3. Termination",
-                    content: "We may terminate or suspend access to our Service immediately, without prior notice or liability, for any reason whatsoever, including if you breach the Terms.",
-                },
-                {
-                    title: "4. Disclaimer",
-                    content: "Your use of the Service is at your sole risk. The Service is provided on an 'AS IS' and 'AS AVAILABLE' basis.",
-                },
-            ],
-        },
         footer: {
             about: "About",
             privacy: "Privacy",
