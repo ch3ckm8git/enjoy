@@ -73,7 +73,7 @@ export default function Navbar({
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button
-                                // variant="ghost"
+                                variant="ghost"
                                 className="rounded-md px-2 text-sm text-muted-foreground hover:text-foreground"
                             >
                                 {t.nav.lessons}

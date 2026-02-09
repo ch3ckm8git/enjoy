@@ -47,7 +47,7 @@ export function LanguageSwitcher({ currentLang }: LanguageSwitcherProps) {
                 <span className="font-bold text-slate-700">{currentLabel}</span>
                 <ChevronDown size={14} className="text-slate-400" />
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-32">
+            <DropdownMenuContent align="end" className="w-32 bg-white">
                 <DropdownMenuItem asChild>
                     <Link href={getLangPath("en")} className="flex items-center gap-2 cursor-pointer w-full">
                         <div className="relative w-5 h-3.5 rounded-[2px] overflow-hidden border border-slate-200">
