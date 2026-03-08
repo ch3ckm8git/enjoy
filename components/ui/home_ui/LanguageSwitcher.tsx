@@ -11,7 +11,7 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/home_ui/dropdown-menu";
 import { ChevronDown } from "lucide-react";
 
 interface LanguageSwitcherProps {

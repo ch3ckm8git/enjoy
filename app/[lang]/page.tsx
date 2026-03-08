@@ -10,9 +10,10 @@ import {
 } from "lucide-react";
 import logo from "@/app/assets/images/logo.png";
 import Image from "next/image";
-import Keyboard3D from "@/components/ui/KeyboardVisual";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
-import TypingAnimation from "@/components/ui/TypingAnimation";
+import Keyboard3D from "@/components/ui/home_ui/KeyboardVisual";
+import { LanguageSwitcher } from "@/components/ui/home_ui/LanguageSwitcher";
+import TypingAnimation from "@/components/ui/home_ui/TypingAnimation";
+import { SiteHeader } from "@/components/ui/home_ui/SiteHeader";
 
 export default async function HomePage({
   params,
@@ -31,23 +32,7 @@ export default async function HomePage({
   return (
     <div className="min-h-screen bg-[#f8fafc] text-[#334155]">
       {/* --- HEADER --- */}
-      <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="max-w-[1200px] mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href={`/${lang}`} className="flex items-center gap-2 hover:scale-105 transition-transform duration-200">
-            <Image src={logo} alt="EnjoyTyping" className="h-8 w-auto" priority />
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-            <a href="#" className="hover:text-[#0066ff] transition-colors">{t.navbar.games}</a>
-            <a href="#" className="hover:text-[#0066ff] transition-colors">{t.navbar.lessons}</a>
-            <LanguageSwitcher currentLang={lang as "en" | "th"} />
-          </nav>
-
-          <button className="h-10 px-5 border-2 border-[#0066ff] text-[#0066ff] bg-transparent text-sm font-bold rounded-lg hover:bg-blue-50 transition-all">
-            {t.hero.start}
-          </button>
-        </div>
-      </header>
+      <SiteHeader lang={lang} />
 
       <main className="max-w-[1200px] mx-auto px-6">
         {/* --- HERO SECTION --- */}
@@ -63,9 +48,9 @@ export default async function HomePage({
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <button className="h-14 px-8 bg-[#10b981] text-white rounded-xl font-bold text-lg flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
+              <Link href={`/${lang}/signup`} className="h-14 px-8 bg-[#10b981] text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
                 {t.hero.start} <Bolt size={20} fill="currentColor" />
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -91,7 +76,7 @@ export default async function HomePage({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {t.features.items.map((feature: typeof dictionary.en.features.items[number], idx: number) => {
+            {t.features.items.map((feature, idx) => {
               const Icon = featureIcons[idx] ?? Eye;
               return (
                 <div

@@ -1,0 +1,30 @@
+{
+    "userId": "someone@gmail.com",
+    "lastUpdated": "2026-03-08T16:47:35.323Z",
+    "milestoneExams": [
+        {
+            "examId": 1,
+            "afterUnit": 7,
+            "isFinished": true,
+            "wpm": 31,
+            "accuracy": 83,
+            "time": 120
+        },
+        {
+            "examId": 2,
+            "afterUnit": 14,
+            "isFinished": false,
+            "wpm": 0,
+            "accuracy": 100,
+            "time": 120
+        },
+        {
+            "examId": 3,
+            "afterUnit": 17,
+            "isFinished": false,
+            "wpm": 0,
+            "accuracy": 0,
+            "time": 120
+        }
+    ]
+}

@@ -1,0 +1,91 @@
+/* Massive Glowing Stars */
+.falling-star {
+    position: absolute;
+    width: 4px;
+    /* Increased size */
+    height: 4px;
+    background: white;
+    border-radius: 50%;
+    opacity: 0;
+    /* Stronger glow */
+    box-shadow: 0 0 10px 2px white, 0 0 20px 4px rgba(255, 255, 255, 0.4);
+    animation: star-move linear infinite;
+}
+
+@keyframes star-move {
+    0% {
+        transform: translateY(-10vh) scale(0.5);
+        opacity: 0;
+    }
+
+    20% {
+        opacity: 1;
+        transform: translateY(10vh) scale(1.2);
+    }
+
+    80% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(110vh) translateX(100px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* 3D Key Styling */
+.keyboard-key {
+    position: fixed;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 12px;
+    box-shadow: 0 5px 0 #94a3b8, 0 10px 20px rgba(0, 0, 0, 0.1);
+    color: #1e293b;
+    z-index: 15;
+}
+
+.keyboard-key.clicked {
+    background: #22c55e !important;
+    color: white !important;
+    box-shadow: 0 0px 0 #16a34a, 0 0 30px rgba(34, 197, 94, 0.8) !important;
+    animation: key-pop 0.4s ease-out forwards;
+}
+
+@keyframes key-pop {
+    0% {
+        transform: scale(1.2);
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}
+
+@keyframes key-fall-tumble {
+    0% {
+        transform: translateY(-15vh) rotate(0deg);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(110vh) rotate(20deg);
+        opacity: 0;
+    }
+}
+
+.animate-key-fall {
+    animation: key-fall-tumble linear forwards;
+}

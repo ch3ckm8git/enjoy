@@ -1,5 +1,5 @@
-import { SiteHeader } from "@/components/ui/SiteHeader";
-import { SiteFooter } from "@/components/ui/SiteFooter";
+import { SiteHeader } from "@/components/ui/home_ui/SiteHeader";
+import { SiteFooter } from "@/components/ui/home_ui/SiteFooter";
 import { dictionary, isLang, Lang } from "@/lib/i18n";
 import { notFound } from "next/navigation";
 

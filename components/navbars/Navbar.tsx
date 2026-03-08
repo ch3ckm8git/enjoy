@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 // import your UI components...
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/home_ui/button";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,7 +13,7 @@ import {
     DropdownMenuLabel,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/home_ui/dropdown-menu";
 
 export default function Navbar({
     lang,

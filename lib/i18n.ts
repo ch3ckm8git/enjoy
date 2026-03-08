@@ -97,6 +97,204 @@ export const dictionary = {
             contact: "ติดต่อเรา",
             enjoytyping: "EnjoyTyping",
             rights: "สงวนลิขสิทธิ์ทั้งหมด"
+        },
+        signup: {
+            title: "เข้าสู่ระบบด้วย Google",
+            continueWithGoogle: "ดำเนินการต่อด้วย Google",
+        },
+        sidebar: {
+            courses: "บทเรียนของฉัน",
+            quick_test: "แบบทดสอบ",
+            profile: "โปรไฟล์ของฉัน",
+        },
+        profile: {
+            title: "โปรไฟล์ของฉัน",
+            email: "อีเมล",
+            username: "ชื่อผู้ใช้",
+            edit: "แก้ไข",
+            save: "บันทึก",
+            cancel: "ยกเลิก",
+            level: "เลเวล",
+            xpProgress: "ความคืบหน้า XP",
+            joinDate: "เข้าใช้งานล่าสุด",
+            saving: "กำลังบันทึก...",
+        },
+        lessons: {
+            dailyStreak: "สถิติต่อเนื่อง",
+            days: "วัน",
+            learningTime: "เวลาเรียน",
+            hours: "ชม.",
+            mins: "นาที",
+            certificates: "ใบรับรอง",
+            earned: "ใบ",
+            levelProgress: "ความคืบหน้า",
+            level: "เลเวล",
+            completed: "สำเร็จ",
+            xpToLevel: "XP เพื่อเลื่อนขึ้นเลเวล",
+
+            footerRights: "สงวนลิขสิทธิ์ทั้งหมด",
+            helpCenter: "ศูนย์ช่วยเหลือ",
+            privacyPolicy: "นโยบายความเป็นส่วนตัว",
+            terms: "เงื่อนไขการให้บริการ",
+            courseSection: {
+                module: "บทเรียนที่",
+                progress: "ความคืบหน้า",
+                currentLesson: "บทเรียนปัจจุบัน",
+                lessonDrill: "แบบฝึกหัด",
+                startLesson: "เริ่มบทเรียน",
+                bestWpm: "WPM สูงสุด",
+                accuracy: "ความแม่นยำ",
+                review: "ทบทวน",
+                start: "เริ่ม",
+                notCompleted: "ยังไม่สำเร็จ",
+                wpm: "WPM",
+                time: "เวลา",
+                unit: "หน่วยที่",
+            },
+            quickTestSection: {
+                locked: "ถูกล็อก",
+                startTest: "เริ่มทำแบบทดสอบ",
+                review: "ลองอีกครั้ง",
+                completeXToUnlock: "ต้องเรียนให้จบบทเรียนที่ {start}-{end} เพื่อปลดล็อก (ทำไปแล้ว {finished}/{total} แบบฝึกหัด)",
+                test: "แบบทดสอบ",
+                certificateUnlocked: "ปลดล็อกใบรับรองแล้ว!",
+                certificateDesc: "คุณทำแบบทดสอบที่ {examId} ผ่านและได้รับใบรับรองใหม่",
+                printCertificate: "พิมพ์ใบรับรอง",
+                certificateSoon: "ใบรับรอง (เร็วๆนี้)",
+                exitTest: "ออกจากการทดสอบ",
+                completeForCertificate: "(สอบให้ผ่านเพื่อรับใบรับรอง)",
+                freeType: "ฝึกพิมพ์",
+                freeTypeDesc: "ฝึกพิมพ์แบบอิสระ เพิ่มเลเวล",
+                selectTime: "เลือกเวลา"
+            },
+            scoreboard: {
+                complete: "บทเรียนเสร็จสิ้น",
+                excellent: "ยอดเยี่ยม!",
+                failed: "ไม่ผ่าน!",
+                wpmLow: "WPM ต้องมากกว่า 20",
+                summary: "สรุปผลงาน",
+                wpm: "คำต่อนาที",
+                accuracy: "ความแม่นยำ",
+                timeTaken: "เวลาที่ใช้",
+                progress: "ความคืบหน้าบทเรียน",
+                complete_status: "เสร็จสิ้น",
+                not_completed: "ยังไม่เสร็จสิ้น",
+                continue: "ดำเนินการต่อ",
+                restart: "เริ่มใหม่",
+                wpm_unit: "WPM",
+                acc_unit: "ACC",
+                time_label: "จับเวลา",
+                goBack: "กลับไป"
+            },
+            ranks: {
+                beginner: "ผู้เริ่มต้น",
+                intermediate: "ผู้มีฝีมือ",
+                pro: "ผู้เชี่ยวชาญ"
+            },
+            sub_unit_title: {
+                "unit_1": {
+                    "1.1": "การฝึกพิมพ์อักษรเดี่ยว: ฟ ห ก ด ่ า ส ว",
+                    "1.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "1.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "1.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_2": {
+                    "2.1": "การฝึกพิมพ์อักษรเดี่ยว: พ อ ี ท",
+                    "2.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "2.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "2.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_3": {
+                    "3.1": "การฝึกพิมพ์อักษรเดี่ยว: ำ แ ร ม",
+                    "3.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "3.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "3.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_4": {
+                    "4.1": "การฝึกพิมพ์อักษรเดี่ยว: ไ ป น ใ",
+                    "4.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "4.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "4.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_5": {
+                    "5.1": "การฝึกพิมพ์อักษรเดี่ยว: ๆ ผ ย ฝ",
+                    "5.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "5.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "5.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_6": {
+                    "6.1": "การฝึกพิมพ์อักษรเดี่ยว: ง บ ล",
+                    "6.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "6.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "6.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_7": {
+                    "7.1": "การฝึกพิมพ์อักษรเดี่ยว: เ ะ ้",
+                    "7.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "7.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "7.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_8": {
+                    "8.1": "การฝึกพิมพ์อักษรเดี่ยว: ิ ั ื",
+                    "8.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "8.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "8.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_9": {
+                    "9.1": "การฝึกพิมพ์อักษรเดี่ยว: ภ ถ ุ ึ",
+                    "9.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "9.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ (เว้นว่างไว้สำหรับอนาคต)",
+                    "9.4": "การฝึกพิมพ์เป็นประโยค (เว้นว่างไว้สำหรับอนาคต)"
+                },
+                "unit_10": {
+                    "10.1": "การฝึกพิมพ์อักษรเดี่ยว: ค ต ข จ ช",
+                    "10.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "10.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "10.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_11": {
+                    "11.1": "การฝึกพิมพ์อักษรเดี่ยว: ณ ศ ฒ ญ ฐ",
+                    "11.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "11.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "11.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_12": {
+                    "12.1": "การฝึกพิมพ์อักษรเดี่ยว: โ ู ธ ษ",
+                    "12.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "12.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "12.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_13": {
+                    "13.1": "การฝึกพิมพ์อักษรเดี่ยว: ฉ ฏ ฎ ซ",
+                    "13.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "13.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "13.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_14": {
+                    "14.1": "การฝึกพิมพ์อักษรเดี่ยว: ็ ฬ ฑ ฮ ฆ",
+                    "14.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "14.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "14.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_15": {
+                    "15.1": "การฝึกพิมพ์อักษรเดี่ยว: ์ ๋ ๊ ฯ ฌ",
+                    "15.2": "การฝึกพิมพ์ผสมพยางค์",
+                    "15.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "15.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_16": {
+                    "16.1": "การฝึกพิมพ์แป้นตัวเลขไทยเดี่ยว",
+                    "16.2": "การฝึกพิมพ์ผสมตัวเลขและพยางค์",
+                    "16.3": "การฝึกพิมพ์เป็นคำและกลุ่มคำ",
+                    "16.4": "การฝึกพิมพ์เป็นประโยค"
+                },
+                "unit_17": {
+                    "17.1": "การฝึกพิมพ์เครื่องหมายและสัญลักษณ์เดี่ยว",
+                    "17.2": "การฝึกพิมพ์ผสมเครื่องหมายและพยางค์",
+                    "17.3": "การฝึกพิมพ์เครื่องหมายในกลุ่มคำ",
+                    "17.4": "การฝึกพิมพ์ประโยคผสมเครื่องหมาย"
+                }
+            }
         }
     },
     en: {
@@ -195,6 +393,205 @@ export const dictionary = {
             contact: "Contact",
             enjoytyping: "EnjoyTyping",
             rights: "All rights reserved."
+        },
+        signup: {
+            title: "Sign in with Google",
+            continueWithGoogle: "Continue with Google",
+        },
+        sidebar: {
+            courses: "My Courses",
+            quick_test: "Exam",
+            profile: "My Profile",
+        },
+        profile: {
+            title: "My Profile",
+            email: "Email",
+            username: "Username",
+            edit: "Edit",
+            save: "Save",
+            cancel: "Cancel",
+            level: "Level",
+            xpProgress: "XP Progress",
+            joinDate: "Last Active",
+            saving: "Saving...",
+        },
+        lessons: {
+            dailyStreak: "Daily Streak",
+            days: "Days",
+
+            learningTime: "Learning Time",
+            hours: "h",
+            mins: "m",
+            certificates: "Certificates",
+            earned: "Earned",
+            levelProgress: "Level Progress",
+            level: "Level",
+            completed: "Completed",
+            xpToLevel: "XP to Level",
+
+            footerRights: "All rights reserved.",
+            helpCenter: "Help Center",
+            privacyPolicy: "Privacy Policy",
+            terms: "Terms of Service",
+            courseSection: {
+                module: "Module",
+                progress: "Progress",
+                currentLesson: "Current Lesson",
+                lessonDrill: "Lesson Drill",
+                startLesson: "Start Lesson",
+                bestWpm: "Best WPM",
+                accuracy: "Acc",
+                review: "Review",
+                start: "Start",
+                notCompleted: "Not completed",
+                wpm: "WPM",
+                time: "Time",
+                unit: "Course"
+            },
+            quickTestSection: {
+                locked: "Locked",
+                startTest: "Start Test",
+                review: "Review",
+                completeXToUnlock: "Complete Lessons {start}-{end} to unlock ({finished}/{total} finished)",
+                test: "Test",
+                certificateUnlocked: "Certificate Unlocked!",
+                certificateDesc: "You passed Exam {examId} and earned a new certificate.",
+                printCertificate: "Print Certificate",
+                certificateSoon: "Certificate (SOON)",
+                exitTest: "Exit Test",
+                completeForCertificate: "(Complete this to get the certificate)",
+                freeType: "Free Type",
+                freeTypeDesc: "Practice typing freely and earn exp.",
+                selectTime: "Select Time"
+            },
+            scoreboard: {
+                complete: "Lesson Complete",
+                excellent: "Excellent!",
+                failed: "Keep Practicing!",
+                wpmLow: "WPM should be above 20",
+                summary: "Performance Summary",
+                wpm: "Words Per Minute",
+                accuracy: "Accuracy",
+                timeTaken: "Time Taken",
+                progress: "Lesson Progress",
+                complete_status: "Complete",
+                not_completed: "Not completed",
+                continue: "Continue",
+                restart: "Restart Drill",
+                wpm_unit: "WPM",
+                acc_unit: "ACC",
+                time_label: "Time",
+                goBack: "Go Back"
+            },
+            ranks: {
+                beginner: "Beginner",
+                intermediate: "Intermediate",
+                pro: "Pro"
+            },
+            sub_unit_title: {
+                "unit_1": {
+                    "1.1": "Typing single letters: ฟ ห ก ด ่ า ส ว",
+                    "1.2": "Typing combined syllables",
+                    "1.3": "Typing words and phrases",
+                    "1.4": "Typing sentences"
+                },
+                "unit_2": {
+                    "2.1": "Typing single letters: พ อ ี ท",
+                    "2.2": "Typing combined syllables",
+                    "2.3": "Typing words and phrases",
+                    "2.4": "Typing sentences"
+                },
+                "unit_3": {
+                    "3.1": "Typing single letters: ำ แ ร ม",
+                    "3.2": "Typing combined syllables",
+                    "3.3": "Typing words and phrases",
+                    "3.4": "Typing sentences"
+                },
+                "unit_4": {
+                    "4.1": "Typing single letters: ไ ป น ใ",
+                    "4.2": "Typing combined syllables",
+                    "4.3": "Typing words and phrases",
+                    "4.4": "Typing sentences"
+                },
+                "unit_5": {
+                    "5.1": "Typing single letters: ๆ ผ ย ฝ",
+                    "5.2": "Typing combined syllables",
+                    "5.3": "Typing words and phrases",
+                    "5.4": "Typing sentences"
+                },
+                "unit_6": {
+                    "6.1": "Typing single letters: ง บ ล",
+                    "6.2": "Typing combined syllables",
+                    "6.3": "Typing words and phrases",
+                    "6.4": "Typing sentences"
+                },
+                "unit_7": {
+                    "7.1": "Typing single letters: เ ะ ้",
+                    "7.2": "Typing combined syllables",
+                    "7.3": "Typing words and phrases",
+                    "7.4": "Typing sentences"
+                },
+                "unit_8": {
+                    "8.1": "Typing single letters: ิ ั ื",
+                    "8.2": "Typing combined syllables",
+                    "8.3": "Typing words and phrases",
+                    "8.4": "Typing sentences"
+                },
+                "unit_9": {
+                    "9.1": "Typing single letters: ภ ถ ุ ึ",
+                    "9.2": "Typing combined syllables",
+                    "9.3": "Typing words and phrases (Reserved for future use)",
+                    "9.4": "Typing sentences (Reserved for future use)"
+                },
+                "unit_10": {
+                    "10.1": "Typing single letters: ค ต ข จ ช",
+                    "10.2": "Typing combined syllables",
+                    "10.3": "Typing words and phrases",
+                    "10.4": "Typing sentences"
+                },
+                "unit_11": {
+                    "11.1": "Typing single letters: ณ ศ ฒ ญ ฐ",
+                    "11.2": "Typing combined syllables",
+                    "11.3": "Typing words and phrases",
+                    "11.4": "Typing sentences"
+                },
+                "unit_12": {
+                    "12.1": "Typing single letters: โ ู ธ ษ",
+                    "12.2": "Typing combined syllables",
+                    "12.3": "Typing words and phrases",
+                    "12.4": "Typing sentences"
+                },
+                "unit_13": {
+                    "13.1": "Typing single letters: ฉ ฏ ฎ ซ",
+                    "13.2": "Typing combined syllables",
+                    "13.3": "Typing words and phrases",
+                    "13.4": "Typing sentences"
+                },
+                "unit_14": {
+                    "14.1": "Typing single letters: ็ ฬ ฑ ฮ ฆ",
+                    "14.2": "Typing combined syllables",
+                    "14.3": "Typing words and phrases",
+                    "14.4": "Typing sentences"
+                },
+                "unit_15": {
+                    "15.1": "Typing single letters: ์ ๋ ๊ ฯ ฌ",
+                    "15.2": "Typing combined syllables",
+                    "15.3": "Typing words and phrases",
+                    "15.4": "Typing sentences"
+                },
+                "unit_16": {
+                    "16.1": "Typing Thai numerals",
+                    "16.2": "Typing combined numerals and syllables",
+                    "16.3": "Typing words and phrases",
+                    "16.4": "Typing sentences"
+                },
+                "unit_17": {
+                    "17.1": "Typing Thai symbols",
+                    "17.2": "Typing combined symbols and syllables",
+                    "17.3": "Typing symbols in phrases",
+                    "17.4": "Typing sentences with symbols"
+                }
+            }
         }
     },
 } as const;

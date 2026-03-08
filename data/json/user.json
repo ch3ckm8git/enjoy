@@ -1,0 +1,18 @@
+{
+    "uid": "user_123",
+    "username": "someone1",
+    "email": "someone@example.com",
+    "imgUrl": "url_to_image",
+    "stats": {
+        "exp": 548,
+        "level": 0,
+        "streak": 0,
+        "totalLearningTime": 1843
+    },
+    "lastActiveDate": "2026-03-04T10:00:00Z",
+    "earnedCertificates": {
+        "exam_1": true,
+        "exam_2": true,
+        "exam_3": false
+    }
+}

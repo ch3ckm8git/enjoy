@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { dictionary, Lang } from "@/lib/i18n";
-import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
+import { LanguageSwitcher } from "@/components/ui/home_ui/LanguageSwitcher";
 import logo from "@/app/assets/images/logo.png";
 
 export function SiteHeader({ lang }: { lang: Lang }) {
@@ -15,14 +15,13 @@ export function SiteHeader({ lang }: { lang: Lang }) {
                 </Link>
 
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
-                    <Link href="#" className="hover:text-[#0066ff] transition-colors">{t.navbar.games}</Link>
-                    <Link href="#" className="hover:text-[#0066ff] transition-colors">{t.navbar.lessons}</Link>
+                    <Link href={`/${lang}/lessons`} className="hover:text-[#0066ff] transition-colors">{t.navbar.lessons}</Link>
                     <LanguageSwitcher currentLang={lang as "en" | "th"} />
                 </nav>
 
-                <button className="h-10 px-5 border-2 border-[#0066ff] text-[#0066ff] bg-transparent text-sm font-bold rounded-lg hover:bg-blue-50 transition-all">
+                <Link href={`/${lang}/signup`} className="h-10 px-5 border-2 border-[#0066ff] text-[#0066ff] bg-transparent text-sm font-bold rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center">
                     {t.hero.start}
-                </button>
+                </Link>
             </div>
         </header>
     );
