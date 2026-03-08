@@ -89,8 +89,11 @@ export function CourseSection({ lang }: { lang: Lang }) {
                               {t.currentLesson}
                             </span>
                           </div>
-                          <h4 className="text-slate-900 text-lg font-bold font-display leading-tight">
+                          <h4 className="text-slate-900 text-lg font-bold font-display leading-tight flex items-center gap-2">
                             {subTitle}
+                            <span className="bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm shrink-0">
+                              +{unitData.unitId <= 4 ? 100 : unitData.unitId <= 9 ? 150 : unitData.unitId <= 13 ? 200 : 300} XP
+                            </span>
                           </h4>
                         </div>
                       </div>
@@ -108,9 +111,16 @@ export function CourseSection({ lang }: { lang: Lang }) {
                         {isFinished ? <Check className="w-5 h-5" /> : <Play className="w-4 h-4 ml-0.5" />}
                       </div>
                       <div>
-                        <h4 className={`font-bold ${isFinished ? 'text-slate-500 line-through decoration-slate-300' : 'text-slate-700'}`}>
-                          {subTitle}
-                        </h4>
+                        <div className="flex items-center gap-2">
+                          <h4 className={`font-bold ${isFinished ? 'text-slate-500 line-through decoration-slate-300' : 'text-slate-700'}`}>
+                            {subTitle}
+                          </h4>
+                          {!isFinished && (
+                            <span className="bg-amber-100 text-amber-700 border border-amber-300 text-[10px] font-black px-1.5 py-0.5 rounded-full shadow-sm shrink-0">
+                              +{unitData.unitId <= 4 ? 100 : unitData.unitId <= 9 ? 150 : unitData.unitId <= 13 ? 200 : 300} XP
+                            </span>
+                          )}
+                        </div>
                         {isFinished && <p className="text-slate-400 text-sm font-medium">{t.bestWpm}: {sub.wpm} | {t.accuracy}: {sub.accuracy}%</p>}
                       </div>
                     </div>

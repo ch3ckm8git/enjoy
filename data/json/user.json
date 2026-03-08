@@ -4,10 +4,10 @@
     "email": "someone@example.com",
     "imgUrl": "url_to_image",
     "stats": {
-        "exp": 548,
+        "exp": 848,
         "level": 0,
         "streak": 0,
-        "totalLearningTime": 1843
+        "totalLearningTime": 1897
     },
     "lastActiveDate": "2026-03-04T10:00:00Z",
     "earnedCertificates": {

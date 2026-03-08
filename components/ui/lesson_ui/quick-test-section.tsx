@@ -81,15 +81,21 @@ export function QuickTestSection({ lang }: { lang: Lang }) {
                     {showTimeSelect ? (
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300 flex-wrap justify-end">
                             <span className="text-sm font-bold text-slate-500 mr-2">{t.selectTime || "Select Time"}:</span>
-                            {[15, 30, 45, 60, 120].map(time => (
-                                <Link
-                                    key={time}
-                                    href={`/${lang}/quick_test/free?time=${time}`}
-                                    className="bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-blue-200 transition-all transform hover:scale-105 active:scale-95 flex items-center justify-center min-w-[60px]"
-                                >
-                                    {time}s
-                                </Link>
-                            ))}
+                            {[15, 30, 45, 60, 120].map(time => {
+                                const xpReward = time === 15 ? 12.5 : time === 30 ? 25 : time === 45 ? 50 : time === 60 ? 75 : 100;
+                                return (
+                                    <Link
+                                        key={time}
+                                        href={`/${lang}/quick_test/free?time=${time}`}
+                                        className="relative bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold px-4 py-3 sm:px-5 sm:py-3.5 rounded-xl border border-blue-200 transition-all transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center min-w-[70px]"
+                                    >
+                                        <span>{time}s</span>
+                                        <span className="absolute -top-2 -right-2 bg-amber-400 text-amber-900 border border-amber-300 text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm">
+                                            +{xpReward} XP
+                                        </span>
+                                    </Link>
+                                )
+                            })}
                             <button
                                 onClick={() => setShowTimeSelect(false)}
                                 className="ml-2 text-slate-400 hover:text-slate-600 p-2"

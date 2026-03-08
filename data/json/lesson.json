@@ -1,6 +1,6 @@
 {
     "userId": "someone@gmail.com",
-    "lastUpdated": "2026-03-08T16:48:57.396Z",
+    "lastUpdated": "2026-03-08T20:07:23.431Z",
     "units": [
         {
             "unitId": 1,
@@ -535,10 +535,10 @@
             "subUnits": [
                 {
                     "subId": 1,
-                    "isFinished": false,
-                    "wpm": 0,
-                    "accuracy": 0,
-                    "time": 0
+                    "isFinished": true,
+                    "wpm": 40,
+                    "accuracy": 99,
+                    "time": 54
                 },
                 {
                     "subId": 2,
