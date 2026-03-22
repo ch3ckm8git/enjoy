@@ -1,7 +1,10 @@
+"use client";
+
 import Image from 'next/image';
 import { Trophy, BookOpen, HelpCircle } from 'lucide-react';
 import { getRankTag } from '@/lib/level-system';
 import { dictionary, Lang } from '@/lib/i18n';
+import { motion } from 'framer-motion';
 
 interface UserProfileCardProps {
   name: string;
@@ -62,9 +65,11 @@ export function UserProfileCard({
               <span className="text-xs text-slate-500 font-bold">Lessons</span>
             </div>
             <div className="h-2 w-full bg-slate-200 rounded-full mt-2 overflow-hidden">
-              <div
-                className="h-full bg-sky-500 rounded-full transition-all duration-500"
-                style={{ width: `${lessonsProgress}%` }}
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${lessonsProgress}%` }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.2 }}
+                className="h-full bg-sky-500 rounded-full"
               />
             </div>
           </div>
@@ -75,9 +80,11 @@ export function UserProfileCard({
               <span className="text-xs text-slate-500 font-bold">Exams</span>
             </div>
             <div className="h-2 w-full bg-slate-200 rounded-full mt-2 overflow-hidden">
-              <div
-                className="h-full bg-orange-500 rounded-full transition-all duration-500"
-                style={{ width: `${examsProgress}%` }}
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${examsProgress}%` }}
+                transition={{ duration: 1.2, ease: "easeOut", delay: 0.4 }}
+                className="h-full bg-orange-500 rounded-full"
               />
             </div>
           </div>

@@ -13,6 +13,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import ProtectedRoute from '@/components/ui/ProtectedRoute';
 import Loading from '@/app/[lang]/loading';
+import { motion } from 'framer-motion';
 
 export default function LessonsDashboardClient({ lang }: { lang: Lang }) {
     const t = dictionary[lang];
@@ -143,12 +144,14 @@ export default function LessonsDashboardClient({ lang }: { lang: Lang }) {
                                     </span>
                                 </div>
                                 <div className="h-4 w-full bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 shadow-inner my-1">
-                                    <div
-                                        className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-full shadow-[0_0_12px_rgba(99,102,241,0.4)] transition-all duration-1000 bg-[length:200%_auto] animate-gradient"
-                                        style={{ width: `${progressPercentage}%` }}
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${progressPercentage}%` }}
+                                        transition={{ duration: 1.5, ease: "easeOut", delay: 0.1 }}
+                                        className="h-full bg-gradient-to-r from-indigo-500 via-purple-500 to-indigo-500 rounded-full shadow-[0_0_12px_rgba(99,102,241,0.4)] bg-[length:200%_auto] animate-gradient"
                                     >
                                         <div className="w-full h-full opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')]" />
-                                    </div>
+                                    </motion.div>
                                 </div>
                                 <div className="flex justify-between items-center mt-2">
                                     <p className="text-xs text-slate-400 font-medium">

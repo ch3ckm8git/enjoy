@@ -75,6 +75,17 @@ export function Sidebar({ lang }: { lang: Lang }) {
           <span className="text-sm font-medium">{t.sidebar.settings}</span>
         </Link>
       </div> */}
+      <div className="p-4 mt-auto">
+        <a
+          href="https://docs.google.com/forms/d/e/1FAIpQLSe6CFN40uV3rbXBNlWdcEIF2_Xs4W1jD9L0AxfKKpbXdAqVDw/viewform"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 px-3 py-3 rounded-lg transition-all text-slate-500 hover:text-indigo-600 hover:bg-slate-50 group"
+        >
+          <MessageSquare className="w-5 h-5 transition-transform group-hover:scale-110 text-slate-400 group-hover:text-indigo-600" />
+          <span className="text-sm font-medium">Report issues</span>
+        </a>
+      </div>
     </aside>
   );
 }

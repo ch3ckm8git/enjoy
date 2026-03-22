@@ -18,7 +18,7 @@ export default function HeroAction({ lang, startText }: { lang: string, startTex
             href={`/${lang}/${user ? 'lessons' : 'signup'}`}
             className="h-14 px-8 bg-[#10b981] text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20 max-w-max"
         >
-            {user ? "Go to Lessons" : startText} <Bolt size={20} fill="currentColor" />
+            {user ? (lang === 'th' ? 'ไปที่บทเรียน' : 'Go to Lessons') : startText} <Bolt size={20} fill="currentColor" />
         </Link>
     );
 }
