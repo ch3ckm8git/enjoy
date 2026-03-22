@@ -1,11 +1,15 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { dictionary, Lang } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/ui/home_ui/LanguageSwitcher";
 import logo from "@/app/assets/images/logo.png";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 export function SiteHeader({ lang }: { lang: Lang }) {
     const t = dictionary[lang];
+    const { user, loading } = useAuth();
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/80 backdrop-blur-md">
@@ -19,9 +23,17 @@ export function SiteHeader({ lang }: { lang: Lang }) {
                     <LanguageSwitcher currentLang={lang as "en" | "th"} />
                 </nav>
 
-                <Link href={`/${lang}/signup`} className="h-10 px-5 border-2 border-[#0066ff] text-[#0066ff] bg-transparent text-sm font-bold rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center">
-                    {t.hero.start}
-                </Link>
+                {!loading && (
+                    <Link
+                        href={`/${lang}/${user ? 'profile' : 'signup'}`}
+                        className="h-10 px-5 border-2 border-[#0066ff] text-[#0066ff] bg-transparent text-sm font-bold rounded-lg hover:bg-blue-50 transition-all flex items-center justify-center"
+                    >
+                        {user ? (user.displayName || "Profile") : t.hero.start}
+                    </Link>
+                )}
+                {loading && (
+                    <div className="h-10 w-24 bg-slate-100 animate-pulse rounded-lg"></div>
+                )}
             </div>
         </header>
     );

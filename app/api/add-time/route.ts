@@ -1,54 +1,89 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
+import { calculateNewStreak } from '@/lib/streak-utils';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
-        const body = await request.json();
-        const { timeToAddSeconds, isFreeType } = body;
-
-        if (!timeToAddSeconds || typeof timeToAddSeconds !== 'number') {
-            return NextResponse.json({ error: 'Missing or invalid timeToAddSeconds' }, { status: 400 });
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const dataPath = path.join(process.cwd(), 'data/json/user.json');
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        const uid = decodedToken.uid;
 
-        if (!fs.existsSync(dataPath)) {
-            return NextResponse.json({ error: 'user.json not found' }, { status: 404 });
+        const { sessionToken, timeToAddSeconds, isFreeType, totalKeystrokes } = await req.json();
+
+        if (!sessionToken || !timeToAddSeconds) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const fileData = fs.readFileSync(dataPath, 'utf8');
-        const userData = JSON.parse(fileData);
+        const sessionRef = adminDb.collection('users').doc(uid).collection('sessions').doc(sessionToken);
+        const sessionSnap = await sessionRef.get();
 
-        if (!userData.stats) {
-            userData.stats = { totalLearningTime: 0 };
-        }
-        if (typeof userData.stats.totalLearningTime !== 'number') {
-            userData.stats.totalLearningTime = 0;
+        if (!sessionSnap.exists || !sessionSnap.data()?.active) {
+            return NextResponse.json({ error: 'Invalid or expired session' }, { status: 400 });
         }
 
-        userData.stats.totalLearningTime += timeToAddSeconds;
+        const sessionData = sessionSnap.data()!;
+        const startTime = sessionData.startTime.toDate();
+        const endTime = new Date();
+        const elapsedTimeSeconds = Math.max(1, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
 
-        // NEW: Add XP for Free Type
-        if (isFreeType) {
-            let xpReward = 0;
-            if (timeToAddSeconds >= 120) xpReward = 100;
-            else if (timeToAddSeconds >= 60) xpReward = 75;
-            else if (timeToAddSeconds >= 45) xpReward = 50;
-            else if (timeToAddSeconds >= 30) xpReward = 25;
-            else if (timeToAddSeconds >= 15) xpReward = 12.5;
+        // Deactivate session
+        await sessionRef.update({ active: false });
 
-            if (xpReward > 0) {
-                if (typeof userData.stats.exp !== 'number') userData.stats.exp = 0;
-                userData.stats.exp += Math.floor(xpReward); // Floor to keep integers, or keep decimals if desired
-            }
+        // Use verified backend time
+        const actualTimeToAdd = Math.min(elapsedTimeSeconds, 3600); // Max 1 hour free type session
+
+        // Anti-cheat: Validate strokes against actual backend time
+        const minutes = actualTimeToAdd / 60;
+        const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+
+        let xpReward = 0;
+        let finalTimeToAdd = actualTimeToAdd;
+
+        const userRef = adminDb.collection('users').doc(uid);
+        const userSnap = await userRef.get();
+        if (!userSnap.exists) {
+            return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        fs.writeFileSync(dataPath, JSON.stringify(userData, null, 4));
+        const userData = userSnap.data()!;
 
-        return NextResponse.json({ success: true, updatedTime: userData.stats.totalLearningTime });
+        // Anti-Cheat: Idle afk penalty
+        if (wpm < 8) {
+            finalTimeToAdd = 0;
+            xpReward = 0;
+        } else if (isFreeType) {
+            if (actualTimeToAdd >= 120) xpReward = 100;
+            else if (actualTimeToAdd >= 60) xpReward = 50;
+            else if (actualTimeToAdd >= 45) xpReward = 37.5;
+            else if (actualTimeToAdd >= 30) xpReward = 25;
+            else if (actualTimeToAdd >= 15) xpReward = 12.5;
+        }
+
+        const currentExp = (userData.stats?.exp || 0) + xpReward;
+        const totalLearningTime = (userData.stats?.totalLearningTime || 0) + finalTimeToAdd;
+
+        // Update Streak
+        const lastActiveDate = userData.lastActiveDate 
+            ? (userData.lastActiveDate.toDate ? userData.lastActiveDate.toDate() : new Date(userData.lastActiveDate))
+            : null;
+        const newStreak = calculateNewStreak(userData.stats?.streak || 0, lastActiveDate);
+
+        await userRef.update({
+            'stats.exp': currentExp,
+            'stats.totalLearningTime': totalLearningTime,
+            'stats.streak': newStreak,
+            lastActiveDate: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        return NextResponse.json({ success: true, updatedTime: totalLearningTime, xpGained: xpReward, wpm });
     } catch (error) {
         console.error('Error adding time:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }

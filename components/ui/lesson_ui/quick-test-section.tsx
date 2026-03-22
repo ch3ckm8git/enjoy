@@ -2,25 +2,22 @@
 
 import { useState } from 'react';
 import { dictionary, Lang } from '@/lib/i18n';
-import userLessonData from '@/data/json/lesson.json';
-import userData from '@/data/json/user.json';
 import quickTestData from '@/data/json/quick_test.json';
-import userExams from '@/data/json/exam.json';
-import { ArrowRight, Lock, Play, Unlock } from 'lucide-react';
+import { ArrowRight, Lock, Play } from 'lucide-react';
 import Link from 'next/link';
 
-export function QuickTestSection({ lang }: { lang: Lang }) {
+export function QuickTestSection({ lang, userLessonData, userData, userExams }: { lang: Lang, userLessonData: any, userData: any, userExams: any }) {
     const t = dictionary[lang].lessons.quickTestSection;
-    const [devUnlock, setDevUnlock] = useState(false);
+
     const [showTimeSelect, setShowTimeSelect] = useState(false);
 
     // Helper function to calculate if a range of units is completed
     const isRangeFinished = (startUnit: number, endUnit: number) => {
-        const rangeUnits = userLessonData.units.filter(u => u.unitId >= startUnit && u.unitId <= endUnit);
-        const totalSubUnits = rangeUnits.reduce((acc, u) => acc + u.subUnits.length, 0);
-        const finishedSubUnits = rangeUnits.reduce((acc, u) => acc + u.subUnits.filter(su => su.isFinished).length, 0);
+        const rangeUnits = userLessonData.units.filter((u: any) => u.unitId >= startUnit && u.unitId <= endUnit);
+        const totalSubUnits = rangeUnits.reduce((acc: number, u: any) => acc + u.subUnits.length, 0);
+        const finishedSubUnits = rangeUnits.reduce((acc: number, u: any) => acc + u.subUnits.filter((su: any) => su.isFinished).length, 0);
         return {
-            isUnlocked: devUnlock || (totalSubUnits > 0 && finishedSubUnits >= totalSubUnits),
+            isUnlocked: (totalSubUnits > 0 && finishedSubUnits >= totalSubUnits),
             totalNeeded: totalSubUnits,
             finished: finishedSubUnits
         };
@@ -46,16 +43,7 @@ export function QuickTestSection({ lang }: { lang: Lang }) {
 
     return (
         <div className="space-y-6 mt-8">
-            {/* Dev Tool Header */}
-            <div className="flex justify-end mb-2">
-                <button
-                    onClick={() => setDevUnlock(!devUnlock)}
-                    className={`text-xs px-3 py-1.5 rounded-lg border font-mono flex items-center gap-1.5 transition-colors ${devUnlock ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'}`}
-                >
-                    {devUnlock ? <Unlock className="w-3.5 h-3.5" /> : <Lock className="w-3.5 h-3.5" />}
-                    DEV: UNLOCK ALL
-                </button>
-            </div>
+
 
             {/* Free Type / Practice Section */}
             <div className="bg-white rounded-2xl border border-blue-200 shadow-sm overflow-hidden flex flex-col transition-colors hover:border-blue-300">
@@ -82,7 +70,7 @@ export function QuickTestSection({ lang }: { lang: Lang }) {
                         <div className="flex items-center gap-2 animate-in fade-in slide-in-from-right-4 duration-300 flex-wrap justify-end">
                             <span className="text-sm font-bold text-slate-500 mr-2">{t.selectTime || "Select Time"}:</span>
                             {[15, 30, 45, 60, 120].map(time => {
-                                const xpReward = time === 15 ? 12.5 : time === 30 ? 25 : time === 45 ? 50 : time === 60 ? 75 : 100;
+                                const xpReward = time === 15 ? 12.5 : time === 30 ? 25 : time === 45 ? 37.5 : time === 60 ? 50 : 100;
                                 return (
                                     <Link
                                         key={time}
@@ -117,7 +105,7 @@ export function QuickTestSection({ lang }: { lang: Lang }) {
             {testConfig.map((test, index) => {
                 const { isUnlocked, totalNeeded, finished } = isRangeFinished(test.range[0], test.range[1]);
                 const testTitle = (lang === 'en' && test.data.title2) ? test.data.title2 : test.data.title;
-                const examObj = userExams.milestoneExams.find(e => e.examId === index + 1);
+                const examObj = userExams.milestoneExams.find((e: any) => e.examId === index + 1);
                 const isExamFinished = examObj?.isFinished || false;
 
                 return (

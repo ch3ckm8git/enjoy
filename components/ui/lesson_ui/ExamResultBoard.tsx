@@ -1,4 +1,4 @@
-import { Trophy, RefreshCw, ArrowRight, Award, ChevronRight, CheckCircle2 } from 'lucide-react';
+import { Trophy, RefreshCw, ArrowRight, Award, ChevronRight, CheckCircle2, XCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { dictionary, Lang } from '@/lib/i18n';
 import { motion } from 'framer-motion';
@@ -15,6 +15,8 @@ interface ExamResultBoardProps {
     onRestart: () => void;
     onContinue: () => void;
     onCertificate: () => void;
+    isProcessing?: boolean;
+    errorDetail?: string | null;
 }
 
 const circleRadius = 45;
@@ -38,7 +40,9 @@ export function ExamResultBoard({
     isPractice = false,
     onRestart,
     onContinue,
-    onCertificate
+    onCertificate,
+    isProcessing = false,
+    errorDetail = null
 }: ExamResultBoardProps) {
     const t = (dictionary[lang] as any).lessons.scoreboard;
     const tExam = dictionary[lang].lessons.quickTestSection;
@@ -48,6 +52,7 @@ export function ExamResultBoard({
 
     // Number animation
     useEffect(() => {
+        if (isProcessing) return; // Don't animate until we have final numbers
         const duration = 1200;
         const steps = 60;
         const interval = duration / steps;
@@ -65,14 +70,29 @@ export function ExamResultBoard({
         }, interval);
 
         return () => clearInterval(timer);
-    }, [wpm, accuracy]);
+    }, [wpm, accuracy, isProcessing]);
 
     const wpmStrokeDashoffset = circleCircumference - ((Math.min(wpm, 100) / 100) * circleCircumference);
     const accStrokeDashoffset = circleCircumference - ((accuracy / 100) * circleCircumference);
     const timeStrokeDashoffset = circleCircumference - (0.6 * circleCircumference); // Static visual ring for time
 
     return (
-        <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 font-sans">
+        <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 font-sans relative">
+            {/* Processing Overlay */}
+            {isProcessing && (
+                <div className="absolute inset-0 z-[100] bg-white/60 backdrop-blur-sm rounded-3xl flex flex-col items-center justify-center border-2 border-indigo-500/20 shadow-xl overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-t from-indigo-50/50 to-transparent pointer-events-none" />
+                    <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                        className="mb-4"
+                    >
+                        <RefreshCw className="w-12 h-12 text-indigo-500" />
+                    </motion.div>
+                    <h2 className="text-2xl font-black text-slate-800 animate-pulse">{t.loading || "รอสักครู่..."}</h2>
+                    <p className="text-slate-500 font-medium mt-1">{t.processingDesc || "กำลังบันทึกคะแนนของคุณ (Synchronizing Statistics)"}</p>
+                </div>
+            )}
 
             {/* Header Banner - Premium Animated */}
             <motion.div
@@ -92,7 +112,7 @@ export function ExamResultBoard({
                         transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                         className={`inline-flex items-center gap-1.5 text-white px-4 py-1.5 rounded-full text-sm font-bold mb-4 shadow-sm ${isPassed ? 'bg-gradient-to-r from-emerald-500 to-teal-500 shadow-emerald-500/20' : 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/20'}`}
                     >
-                        <CheckCircle2 className="w-4 h-4" /> {isPractice ? t.complete_status : (isPassed ? t.complete : t.not_completed)}
+                        {isPassed ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />} {isPractice ? t.complete_status : (isPassed ? t.complete : t.not_completed)}
                     </motion.div>
 
                     <motion.h1
@@ -117,7 +137,7 @@ export function ExamResultBoard({
                                 <>{tExam.test} {examId}: <span className="text-indigo-600">{examTitle}</span></>
                             )
                         ) : (
-                            <span className="text-rose-500">{t.wpmLow}</span>
+                            <span className="text-rose-500">{errorDetail || t.wpmLow}</span>
                         )}
                     </motion.p>
                 </div>

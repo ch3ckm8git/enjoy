@@ -1,4 +1,5 @@
-import { Trophy, RefreshCw, ArrowRight } from 'lucide-react';
+import { Trophy, RefreshCw, ArrowRight, XCircle } from 'lucide-react';
+import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { dictionary, Lang } from '@/lib/i18n';
 
@@ -15,6 +16,9 @@ interface ScoreBoardProps {
     onContinue: () => void;
     onNavigate: (subId: number) => void;
     lang: Lang;
+    passing?: boolean | null; // null = processing, false = show ไม่ผ่าน screen
+    userImgUrl?: string | null; // User's profile photo
+    errorDetail?: string | null; // Optional specific error message (e.g. "Session Expired")
 }
 
 export function ScoreBoard({
@@ -29,7 +33,10 @@ export function ScoreBoard({
     onRestart,
     onContinue,
     onNavigate,
-    lang
+    lang,
+    passing = null,
+    userImgUrl,
+    errorDetail
 }: ScoreBoardProps) {
     const t = (dictionary[lang] as any).lessons.scoreboard;
     const [animatedWpm, setAnimatedWpm] = useState(0);
@@ -77,20 +84,48 @@ export function ScoreBoard({
         <div className="w-full max-w-4xl mx-auto flex flex-col gap-6 font-sans">
 
             {/* Header Banner */}
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 flex justify-between items-center relative overflow-hidden">
-                {/* Subtle background glow/gradient (optional) */}
-                <div className="absolute top-0 right-0 w-64 h-64 bg-sky-50 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4" />
+            <div className={`rounded-2xl p-8 shadow-sm border flex justify-between items-center relative overflow-hidden transition-colors duration-300 ${
+                passing === null ? 'bg-slate-50 border-slate-200' : 
+                passing ? 'bg-white border-slate-100' : 'bg-rose-50 border-rose-200'
+            }`}>
+                <div className="absolute top-0 right-0 w-64 h-64 rounded-full blur-3xl opacity-50 -translate-y-1/2 translate-x-1/4 bg-sky-50" />
 
                 <div className="z-10 relative">
-                    <div className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-sm font-bold mb-4">
-                        <Trophy className="w-4 h-4" /> {t.complete}
+                    <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-bold mb-4 transition-colors ${
+                        passing === null ? 'bg-slate-200 text-slate-500 animate-pulse' :
+                        passing ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-100 text-rose-600'
+                    }`}>
+                        {passing === null ? (t.processing || 'กำลังตรวจสอบ...') : 
+                         passing ? <Trophy className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                        {passing === null ? (t.processing || 'กำลังตรวจสอบ...') : (passing ? t.complete : t.notPassed)}
                     </div>
-                    <h1 className="text-4xl font-black text-slate-800 tracking-tight">{t.excellent}</h1>
-                    <p className="text-slate-500 font-bold text-lg mt-1">{t.summary}</p>
+                    <h1 className={`text-4xl font-black tracking-tight transition-colors ${
+                        passing === null ? 'text-slate-400' : 
+                        passing ? 'text-slate-800' : 'text-rose-700'
+                    }`}>
+                        {passing === null ? (t.loading || 'รอสักครู่...') : (passing ? t.excellent : t.needPractice)}
+                    </h1>
+                    <p className="text-slate-500 font-bold text-lg mt-1">
+                        {passing === null ? (t.processingDesc || 'ระบบกำลังประมวลผลคะแนนของคุณ') :
+                         (passing ? (t.summary) : (errorDetail || t.wpmLowFallback || 'WPM ต่ำกว่า 8 หรือใช้เวลานานเกินไป กรุณาลองใหม่'))}
+                    </p>
                 </div>
 
-                <div className="z-10 bg-sky-50 p-6 rounded-full">
-                    <Trophy className="w-16 h-16 text-sky-200 fill-sky-200" strokeWidth={1.5} />
+                <div className={`z-10 p-6 rounded-full transition-colors ${
+                    passing === null ? 'bg-slate-100' : 
+                    passing ? 'bg-sky-50' : 'bg-rose-100'
+                }`}>
+                    {userImgUrl ? (
+                        <div className="w-16 h-16 rounded-full overflow-hidden relative border-2 border-white shadow-sm">
+                            <Image src={userImgUrl} alt="Profile" fill className="object-cover" />
+                        </div>
+                    ) : passing === null ? (
+                        <RefreshCw className="w-16 h-16 text-slate-300 animate-spin" strokeWidth={1.5} />
+                    ) : passing ? (
+                        <Trophy className="w-16 h-16 text-sky-200 fill-sky-200" strokeWidth={1.5} />
+                    ) : (
+                        <XCircle className="w-16 h-16 text-rose-300" strokeWidth={1.5} />
+                    )}
                 </div>
             </div>
 
@@ -173,7 +208,8 @@ export function ScoreBoard({
 
             </div>
 
-            {/* Progress Footer */}
+            {/* Progress Footer — only show on pass */}
+            {passing === true && (
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                 <div className="flex justify-between items-end mb-4">
                     <div>
@@ -224,6 +260,7 @@ export function ScoreBoard({
                     })}
                 </div>
             </div>
+            )}
 
             {/* Action Buttons */}
             <div className="flex justify-end items-center gap-4 mt-4">

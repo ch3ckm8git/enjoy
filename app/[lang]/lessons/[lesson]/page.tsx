@@ -4,10 +4,12 @@ import React, { useState, useEffect, useRef } from "react";
 import TypingHands from "@/components/practice/TypingHands";
 import { ScoreBoard } from "@/components/ui/lesson_ui/ScoreBoard";
 import lessons from "@/data/json/output_reindexed_with_test.json";
-import userLessonData from "@/data/json/lesson.json";
 import { keyToFinger } from "@/lib/utils";
 import { notFound, useRouter } from "next/navigation";
-import { Lang } from "@/lib/i18n";
+import { dictionary, Lang } from "@/lib/i18n";
+import { useAuth } from '@/components/providers/AuthProvider';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 type KeyDef = {
     base?: string;
@@ -57,6 +59,7 @@ const fullKeyboardLayout: KeyDef[][] = [
 export default function PracticePage({ params }: { params: Promise<{ lang: string; lesson: string }> }) {
     const { lang, lesson } = React.use(params);
     const router = useRouter();
+    const { user } = useAuth();
     const [currentDrillIndex, setCurrentDrillIndex] = useState(0);
     const [drills, setDrills] = useState<string[]>([]);
 
@@ -64,21 +67,32 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
     const [userInput, setUserInput] = useState("");
     const [hasError, setHasError] = useState(false);
     const [activeKeyPress, setActiveKeyPress] = useState<string | null>(null);
-    const [startTime, setStartTime] = useState<number | null>(null);
-    const [endTime, setEndTime] = useState<number | null>(null);
     const [totalKeystrokes, setTotalKeystrokes] = useState(0);
     const [totalErrors, setTotalErrors] = useState(0);
+    const [completedChars, setCompletedChars] = useState(0); // Anti-cheat state
+    const [startTime, setStartTime] = useState<number | null>(null);
+    const [endTime, setEndTime] = useState<number | null>(null);
+    const [sessionToken, setSessionToken] = useState<string | null>(null);
     const [isLessonComplete, setIsLessonComplete] = useState(false);
+    const [statsPushed, setStatsPushed] = useState(false);
+    const [passing, setPassing] = useState<boolean | null>(null); // null = processing, true/false = result available
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
+    const [serverWpm, setServerWpm] = useState<number | null>(null);
+    const [serverAccuracy, setServerAccuracy] = useState<number | null>(null);
+    const [serverTime, setServerTime] = useState<number | null>(null);
+
 
     // Extracted metadata for ScoreBoard
     const [lessonTitle, setLessonTitle] = useState("");
     const [unitId, setUnitId] = useState<number | null>(null);
     const [subId, setSubId] = useState<number | null>(null);
     const [totalSubUnits, setTotalSubUnits] = useState(4); // Default to 4
+    const [subUnitData, setSubUnitData] = useState<any[]>([]); // To feed the ScoreBoard
     const [specialInstruction, setSpecialInstruction] = useState<string | null>(null);
     const [hideInstruction, setHideInstruction] = useState(false);
 
     const inputRef = useRef<HTMLInputElement>(null);
+    const sessionStartedRef = useRef(false); // Prevents double start-session (React Strict Mode)
 
     // Audio refs
     const typeSound = useRef<HTMLAudioElement | null>(null);
@@ -165,7 +179,39 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
         } else {
             notFound();
         }
-    }, [lesson]);
+    }, [lesson, lang]);
+
+    // Fetch user lesson data from Firestore for the ScoreBoard
+    useEffect(() => {
+        if (unitId && user?.uid) {
+            getDoc(doc(db, "lessons", user.uid)).then(docSnap => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const unitObj = data.units?.find((u: any) => u.unitId === unitId);
+                    if (unitObj && unitObj.subUnits) {
+                        setSubUnitData(unitObj.subUnits);
+                    }
+                }
+            }).catch(err => console.error("Failed to load subunit data from firestore", err));
+        }
+    }, [unitId, user?.uid]);
+
+    // Start session on page load so sessionToken is ready before lesson ends
+    useEffect(() => {
+        if (!user || sessionStartedRef.current || unitId === null || subId === null) return;
+        sessionStartedRef.current = true;
+        user.getIdToken().then(token => {
+            fetch('/api/start-session', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'lesson', unitId, subId })
+            })
+                .then(res => res.json())
+                .then(data => { if (data.sessionToken) setSessionToken(data.sessionToken); })
+                .catch(console.error);
+        }).catch(console.error);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user, unitId, subId]);
 
     // Use Array.from to correctly break apart Thai combining characters
     const currentTextArr = Array.from(drills[currentDrillIndex] || "");
@@ -174,8 +220,9 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
 
     useEffect(() => {
         if (userInputArr.length === currentTextArr.length && currentTextArr.length > 0) {
+            // Next line
+            setCompletedChars(prev => prev + currentTextArr.length);
             if (currentDrillIndex < drills.length - 1) {
-                // Next drill
                 setCurrentDrillIndex(prev => prev + 1);
                 setUserInput("");
             } else if (!isLessonComplete && totalKeystrokes > 0) {
@@ -205,60 +252,113 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
 
     // Save Progress logic
     useEffect(() => {
-        if (isLessonComplete && startTime && endTime && unitId && subId) {
-            const timeTakenSec = Math.round((endTime - startTime) / 1000);
-            const minutes = timeTakenSec / 60;
-            const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+        if (!isLessonComplete || !startTime || !endTime || !unitId || !subId || statsPushed || !user || !sessionToken) return;
 
-            // Allow accuracy to go below 0 visually just in case, but cap it nicely
-            let accuracy = totalKeystrokes > 0
-                ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100)
-                : 100;
-            if (accuracy < 0) accuracy = 0;
-
-            fetch('/api/progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    unitId,
-                    subId,
-                    wpm,
-                    accuracy,
-                    time: timeTakenSec
-                })
-            }).catch(err => console.error("Failed to save progress", err));
-        }
-    }, [isLessonComplete, startTime, endTime, totalKeystrokes, totalErrors, unitId, subId]);
-
-    if (isLessonComplete && startTime && endTime) {
-        // Calculate final stats
         const timeTakenSec = Math.round((endTime - startTime) / 1000);
         const minutes = timeTakenSec / 60;
-        const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+        const correctKeystrokes = completedChars + userInputArr.length;
+        const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
+
+        let accuracy = totalKeystrokes > 0
+            ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100)
+            : 100;
+        if (accuracy < 0) accuracy = 0;
+
+        setStatsPushed(true);
+        user.getIdToken().then(token => {
+            fetch('/api/progress', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionToken, unitId, subId, wpm, accuracy, totalKeystrokes: correctKeystrokes })
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        return res.json().then(data => {
+                            throw new Error(data.error || `Server error: ${res.status}`);
+                        });
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    const tScore = (dictionary[lang as Lang].lessons as any).scoreboard;
+                    if (data.passed === false) {
+                        setPassing(false);
+                        if (data.errorCode === 'INCOMPLETE_CONTENT') {
+                            setErrorDetail(tScore.incompleteContent);
+                        } else {
+                            setErrorDetail(data.message || tScore.wpmLowFallback);
+                        }
+                        // Even on fail, synchronize the shown stats if they returned
+                        if (data.wpm !== undefined) setServerWpm(data.wpm);
+                    } else {
+                        setPassing(true);
+                        setErrorDetail(null);
+                        if (data.wpm !== undefined) setServerWpm(data.wpm);
+                        if (data.accuracy !== undefined) setServerAccuracy(data.accuracy);
+                        if (data.timeTaken !== undefined) setServerTime(data.timeTaken);
+                    }
+                })
+                .catch(err => {
+                    console.error('Failed to save progress', err);
+                    setPassing(false);
+                    setErrorDetail(err.message || 'Failed to connect to server');
+                });
+        });
+    }, [isLessonComplete, startTime, endTime, unitId, subId, totalKeystrokes, totalErrors, sessionToken, user, completedChars, userInputArr.length, statsPushed]);
+
+    // Reset passing state when starting a new session (e.g. from Dashboard)
+    useEffect(() => {
+        if (!isLessonComplete) {
+            setPassing(null);
+            setErrorDetail(null);
+            setStatsPushed(false);
+        }
+    }, [isLessonComplete]);
+
+    if (isLessonComplete) {
+        // Calculate final stats
+        const timeTakenSec = Math.round(((endTime || Date.now()) - (startTime || Date.now())) / 1000);
+        const minutes = timeTakenSec / 60;
+        const correctKeystrokes = completedChars + userInputArr.length;
+        const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
         let accuracy = totalKeystrokes > 0 ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100) : 100;
         if (accuracy < 0) accuracy = 0;
+
+        const currentRunStats = {
+            subId: subId,
+            wpm: serverWpm !== null ? serverWpm : wpm,
+            accuracy: serverAccuracy !== null ? serverAccuracy : accuracy,
+            time: serverTime !== null ? serverTime : timeTakenSec,
+            isFinished: passing === true // Only mark finished if confirmed passed
+        };
+
+        // Merge current run stats over fetched data to ensure immediate UI feedback
+        const mergedSubUnitData = [...subUnitData];
+        const existingIdx = mergedSubUnitData.findIndex(s => s.subId === subId);
+        if (existingIdx !== -1) {
+            // If it's the current lesson, update with current stats (but don't mark as finished unless confirmed)
+            // If passing is false, we don't want to overwrite a previous success with a failure, 
+            // but for the current session we show the current WPM.
+            mergedSubUnitData[existingIdx] = (passing === false) ? mergedSubUnitData[existingIdx] : currentRunStats;
+        } else {
+            // New sublesson, show current stats
+            mergedSubUnitData.push(currentRunStats);
+        }
 
         return (
             <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-4">
                 <div className="w-full">
                     <ScoreBoard
-                        wpm={wpm}
-                        accuracy={accuracy}
-                        timeTaken={timeTakenSec}
+                        wpm={serverWpm !== null ? serverWpm : wpm}
+                        accuracy={serverAccuracy !== null ? serverAccuracy : accuracy}
+                        timeTaken={serverTime !== null ? serverTime : timeTakenSec}
                         lessonTitle={lessonTitle}
                         unitId={unitId || undefined}
                         currentSubUnit={subId || 1}
                         totalSubUnits={totalSubUnits}
                         lang={lang as Lang}
                         onRestart={() => {
-                            // Reset state
-                            setIsLessonComplete(false);
-                            setCurrentDrillIndex(0);
-                            setUserInput("");
-                            setStartTime(null);
-                            setEndTime(null);
-                            setTotalKeystrokes(0);
-                            setTotalErrors(0);
+                            window.location.reload();
                         }}
                         onContinue={() => {
                             // Logic to go to next subunit or dashboard
@@ -271,7 +371,10 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
                         onNavigate={(targetSubId) => {
                             router.push(`/${lang}/lessons/${unitId}.${targetSubId}`);
                         }}
-                        subUnitData={userLessonData?.units.find((u: any) => u.unitId === unitId)?.subUnits || []}
+                        subUnitData={mergedSubUnitData}
+                        passing={passing}
+                        errorDetail={errorDetail}
+                        userImgUrl={user?.photoURL || null}
                     />
                 </div>
             </div>
@@ -337,7 +440,7 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
                 {/* Keyboard Visual - Proportional Grid Sizing */}
                 <div className="w-full max-w-4xl bg-[#cbd5e1] p-2 sm:p-3 rounded-2xl shadow-xl border-b-4 border-slate-400 mb-4 overflow-hidden mt-10 relative">
                     {/* DEBUG BUTTON */}
-                    <button
+                    {/* <button
                         onClick={(e) => {
                             e.stopPropagation();
                             if (startTime === null) setStartTime(Date.now() - 54000); // 1 min ago
@@ -348,7 +451,7 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
                         }}
                         className="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-1 rounded-md opacity-50 hover:opacity-100 z-50">
                         Dev: Finish
-                    </button>
+                    </button> */}
                     <div className="grid grid-cols-29 auto-rows-fr gap-1 sm:gap-1.5 w-full">
                         {fullKeyboardLayout.flatMap((row, i) =>
                             row.map((key, j) => {
@@ -443,7 +546,9 @@ export default function PracticePage({ params }: { params: Promise<{ lang: strin
                         if (val.length < userInputArr.length) return; // Handled by Backspace
 
                         // Start timer on first keystroke
-                        if (startTime === null) setStartTime(Date.now());
+                        if (startTime === null) {
+                            setStartTime(Date.now());
+                        }
                         setTotalKeystrokes(prev => prev + 1);
 
                         const newChar = val[val.length - 1];

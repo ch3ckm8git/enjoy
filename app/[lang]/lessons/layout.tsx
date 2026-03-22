@@ -1,6 +1,7 @@
 import { Sidebar } from '@/components/ui/lesson_ui/sidebar';
 import { dictionary, isLang, Lang } from "@/lib/i18n";
 import { notFound } from "next/navigation";
+import ProtectedRoute from '@/components/ui/ProtectedRoute';
 
 export default async function LessonsLayout({
     children,
@@ -16,11 +17,13 @@ export default async function LessonsLayout({
     const t = dictionary[lang];
 
     return (
-        <div className="bg-slate-50 font-sans text-slate-900 min-h-screen flex overflow-hidden w-full">
-            <Sidebar lang={lang} />
-            <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-50">
-                {children}
-            </main>
-        </div>
+        <ProtectedRoute lang={lang}>
+            <div className="bg-slate-50 font-sans text-slate-900 min-h-screen flex overflow-hidden w-full">
+                <Sidebar lang={lang} />
+                <main className="flex-1 flex flex-col h-screen overflow-hidden relative bg-slate-50">
+                    {children}
+                </main>
+            </div>
+        </ProtectedRoute>
     );
 }

@@ -2,6 +2,7 @@ import { Inter, IBM_Plex_Sans_Thai, Sarabun } from "next/font/google";
 import "../globals.css";
 import { notFound } from "next/navigation";
 import { isLang } from "@/lib/i18n";
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 
 const sarabun = Sarabun({
@@ -46,7 +47,9 @@ export default async function LangLayout({
       <head>
         <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.72/build/spline-viewer.js" defer></script>
       </head>
-      <body>{children}</body>
+      <body>
+        <AuthProvider>{children}</AuthProvider>
+      </body>
     </html>
   );
 }

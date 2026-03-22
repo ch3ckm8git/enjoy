@@ -1,107 +1,204 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
+import { calculateNewStreak } from '@/lib/streak-utils';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
-        const body = await request.json();
-        const { unitId, subId, wpm, accuracy, time } = body;
-
-        if (!unitId || !subId) {
-            return NextResponse.json({ error: 'Missing unitId or subId' }, { status: 400 });
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Read current lesson.json
-        const dataPath = path.join(process.cwd(), 'data/json/lesson.json');
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        const uid = decodedToken.uid;
 
-        if (!fs.existsSync(dataPath)) {
-            return NextResponse.json({ error: 'lesson.json not found' }, { status: 404 });
+        const { sessionToken, unitId, subId, accuracy, totalKeystrokes, wpm } = await req.json();
+
+        if (!sessionToken || !unitId || !subId) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const fileData = fs.readFileSync(dataPath, 'utf8');
-        const lessonData = JSON.parse(fileData);
+        const sessionRef = adminDb.collection('users').doc(uid).collection('sessions').doc(sessionToken);
+        const sessionSnap = await sessionRef.get();
 
-        // Find the unit and update sub-unit
-        let updated = false;
-        let isFirstTimeFinish = false;
-        let xpReward = 0;
+        if (!sessionSnap.exists || !sessionSnap.data()?.active) {
+            return NextResponse.json({ error: 'Invalid or expired session' }, { status: 400 });
+        }
 
-        lessonData.units = lessonData.units.map((unit: any) => {
-            if (unit.unitId === Number(unitId)) {
-                unit.subUnits = unit.subUnits.map((sub: any) => {
-                    if (sub.subId === Number(subId)) {
-                        updated = true;
+        const sessionData = sessionSnap.data()!;
+        if (sessionData.type !== 'lesson') {
+            return NextResponse.json({ error: 'Session type is not lesson' }, { status: 400 });
+        }
 
-                        // Calculate "effective WPM" as the metric for a new high score
-                        const oldScore = (sub.wpm || 0) * (sub.accuracy || 0);
-                        const newScore = wpm * accuracy;
+        const startTime = sessionData.startTime.toDate();
+        const endTime = new Date();
+        const elapsedTimeSeconds = Math.max(1, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
 
-                        // Overwrite if it's the first time finishing, OR if the new overall score is better
-                        const isBetterScore = newScore > oldScore;
+        // Anti-cheat validation
+        const minutes = elapsedTimeSeconds / 60;
+        const backendWpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
 
-                        if (!sub.isFinished) {
-                            isFirstTimeFinish = true;
-                            // Calculate XP based on unitId
-                            if (unitId >= 1 && unitId <= 4) xpReward = 100;
-                            else if (unitId >= 5 && unitId <= 9) xpReward = 150;
-                            else if (unitId >= 10 && unitId <= 13) xpReward = 200;
-                            else if (unitId >= 14 && unitId <= 17) xpReward = 300;
-                            else xpReward = 100; // fallback
-                        }
+        // Verify frontend WPM isn't impossibly high OR wildly different from backend time
+        const validatedWpm = wpm !== undefined ? wpm : backendWpm;
 
-                        return {
-                            ...sub,
-                            isFinished: true,
-                            wpm: (isBetterScore || !sub.isFinished) ? wpm : sub.wpm,
-                            accuracy: (isBetterScore || !sub.isFinished) ? accuracy : sub.accuracy,
-                            time: (isBetterScore || !sub.isFinished) ? time : sub.time
-                        };
-                    }
-                    return sub;
-                });
+        if (validatedWpm > 300 || Math.abs(validatedWpm - backendWpm) > 15) {
+            return NextResponse.json({ error: 'Not done typing' }, { status: 400 });
+        }
+
+        // Integrity Check: Verify total character count matches lesson content
+        // This prevents finishes with "3 words" via dev tools.
+        const targetUnitId = sessionData.unitId || unitId;
+        const targetSubId = sessionData.subId || subId;
+
+        const lessonsData = require('@/data/json/output_reindexed_with_test.json');
+        const unitKey = `unit_${targetUnitId}`;
+        const unitData = lessonsData[unitKey];
+        let expectedChars = 0;
+
+        if (unitData) {
+            const lessonKey = `${targetUnitId}.${targetSubId}`;
+            const drillLines = unitData[lessonKey];
+            if (drillLines && Array.isArray(drillLines)) {
+                // Prepend special drills if subunit is .1
+                let finalLines = [...drillLines];
+                if (String(targetSubId) === "1" && unitData.special_drill) {
+                    finalLines = [...unitData.special_drill, ...finalLines];
+                }
+
+                // Calculate total characters (count all chars in all lines)
+                expectedChars = finalLines.reduce((acc, line) => acc + Array.from(line).length, 0);
             }
-            return unit;
+        }
+
+        // We allow a small tolerance (e.g. 90%) in case of minor discrepancies, 
+        // but it must be significantly higher than "3 words".
+        if (expectedChars > 0 && totalKeystrokes < expectedChars * 0.9) {
+            return NextResponse.json({
+                passed: false,
+                errorCode: 'INCOMPLETE_CONTENT',
+                message: 'เนื้อหาไม่ครบถ้วน กรุณาพิมพ์ให้จบแบบฝึกหัด (Incomplete Content)'
+            });
+        }
+
+        // Deactivate session
+        await sessionRef.update({ active: false });
+
+        // Minimum performance requirement:
+        // WPM must be >= 8 AND session must be under 10 minutes
+        const MAX_ALLOWED_SECONDS = 600; // 10 minutes
+        const MIN_WPM = 8;
+        if (validatedWpm < MIN_WPM || elapsedTimeSeconds > MAX_ALLOWED_SECONDS) {
+            return NextResponse.json({ passed: false, wpm: validatedWpm, timeTaken: elapsedTimeSeconds });
+        }
+
+        // Load User & Lesson
+        const userRef = adminDb.collection('users').doc(uid);
+        const lessonRef = adminDb.collection('lessons').doc(uid);
+
+        const [userSnap, lessonSnap] = await Promise.all([
+            userRef.get(),
+            lessonRef.get()
+        ]);
+
+        if (!userSnap.exists || !lessonSnap.exists) {
+            return NextResponse.json({ error: 'User data not found' }, { status: 404 });
+        }
+
+        const userData = userSnap.data()!;
+        const lessonData = lessonSnap.data()!;
+
+        let xpReward = 0;
+        let isFirstTimeFinish = false;
+
+        // Find existing unit
+        let unitIndex = lessonData.units.findIndex((u: any) => u.unitId === Number(unitId));
+        if (unitIndex === -1) {
+            // Create unit tracking if playing for the first time
+            lessonData.units.push({
+                unitId: Number(unitId),
+                subUnits: []
+            });
+            unitIndex = lessonData.units.length - 1;
+        }
+
+        const currentSubUnits = lessonData.units[unitIndex].subUnits;
+        let subIndex = currentSubUnits.findIndex((s: any) => s.subId === Number(subId));
+
+        let existing: any;
+        if (subIndex === -1) {
+            // Create subunit tracking
+            existing = {
+                subId: Number(subId),
+                isFinished: false,
+                wpm: 0,
+                accuracy: 0,
+                time: 0
+            };
+            currentSubUnits.push(existing);
+            subIndex = currentSubUnits.length - 1;
+        } else {
+            existing = currentSubUnits[subIndex];
+        }
+
+        const oldWpm = existing.wpm || 0;
+        const oldAcc = existing.accuracy || 0;
+
+        // const newWpm = validatedWpm > oldWpm;
+        // const isSameWpmBetterAcc = validatedWpm === oldWpm && accuracy > oldAcc;
+        const isBetterScore = validatedWpm * accuracy > oldWpm * oldAcc;
+
+        if (!existing.isFinished) {
+            isFirstTimeFinish = true;
+            if (unitId >= 1 && unitId <= 4) xpReward = 100;
+            else if (unitId >= 5 && unitId <= 9) xpReward = 150;
+            else if (unitId >= 10 && unitId <= 13) xpReward = 200;
+            else if (unitId >= 14 && unitId <= 17) xpReward = 300;
+            else xpReward = 100;
+        } else {
+            // Replay minimal reward
+            xpReward = Math.round((unitId <= 4 ? 100 : unitId <= 9 ? 150 : unitId <= 13 ? 200 : 300) * 0.1);
+        }
+
+        currentSubUnits[subIndex] = {
+            ...existing,
+            isFinished: true,
+            wpm: isBetterScore || !existing.isFinished ? validatedWpm : existing.wpm,
+            accuracy: isBetterScore || !existing.isFinished ? accuracy : existing.accuracy,
+            time: isBetterScore || !existing.isFinished ? elapsedTimeSeconds : existing.time
+        };
+
+        lessonData.units[unitIndex].subUnits = currentSubUnits;
+
+        const batch = adminDb.batch();
+        // Explicitly update specific field paths to guarantee array persistence
+        batch.update(lessonRef, {
+            units: lessonData.units,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
         });
 
-        if (!updated) {
-            return NextResponse.json({ error: 'Unit or Subunit not found' }, { status: 404 });
-        }
+        const currentExp = (userData.stats?.exp || 0) + xpReward;
+        const totalLearningTime = (userData.stats?.totalLearningTime || 0) + Math.min(elapsedTimeSeconds, 1200);
 
-        // Update timestamp
-        lessonData.lastUpdated = new Date().toISOString();
+        // Update Streak
+        const lastActiveDate = userData.lastActiveDate 
+            ? (userData.lastActiveDate.toDate ? userData.lastActiveDate.toDate() : new Date(userData.lastActiveDate))
+            : null;
+        const newStreak = calculateNewStreak(userData.stats?.streak || 0, lastActiveDate);
 
-        // Write back
-        fs.writeFileSync(dataPath, JSON.stringify(lessonData, null, 4));
+        batch.update(userRef, {
+            'stats.exp': currentExp,
+            'stats.totalLearningTime': totalLearningTime,
+            'stats.streak': newStreak,
+            lastActiveDate: admin.firestore.FieldValue.serverTimestamp()
+        });
 
-        // -- NEW: Update user.json totalLearningTime --
-        const userPath = path.join(process.cwd(), 'data/json/user.json');
-        if (fs.existsSync(userPath)) {
-            const userData = JSON.parse(fs.readFileSync(userPath, 'utf8'));
-            if (!userData.stats) {
-                userData.stats = { totalLearningTime: 0 };
-            }
-            if (typeof userData.stats.totalLearningTime !== 'number') {
-                userData.stats.totalLearningTime = 0;
-            }
+        await batch.commit();
 
-            // Cap the added time to 20 mins (1200 seconds) in case of AFK
-            const timeToAdd = Math.min(Number(time) || 0, 1200);
-            userData.stats.totalLearningTime += timeToAdd;
-
-            // Add XP if it was the first time finishing
-            if (isFirstTimeFinish && xpReward > 0) {
-                if (typeof userData.stats.exp !== 'number') {
-                    userData.stats.exp = 0;
-                }
-                userData.stats.exp += xpReward;
-            }
-
-            fs.writeFileSync(userPath, JSON.stringify(userData, null, 4));
-        }
-
-        return NextResponse.json({ success: true, message: 'Progress saved successfully' });
-    } catch (error) {
+        return NextResponse.json({ success: true, wpm: validatedWpm, timeTaken: elapsedTimeSeconds, xpGained: xpReward });
+    } catch (error: any) {
         console.error('Error saving progress:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Server error', detail: error?.message || String(error) }, { status: 500 });
     }
 }

@@ -1,104 +1,161 @@
 import { NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { adminDb, adminAuth } from '@/lib/firebase-admin';
+import * as admin from 'firebase-admin';
+import { calculateNewStreak } from '@/lib/streak-utils';
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
     try {
-        const body = await request.json();
-        const { examId, wpm, accuracy, time } = body;
-
-        if (!examId) {
-            return NextResponse.json({ error: 'Missing examId' }, { status: 400 });
+        const authHeader = req.headers.get('Authorization');
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Read current exam.json
-        const dataPath = path.join(process.cwd(), 'data/json/exam.json');
+        const token = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(token);
+        const uid = decodedToken.uid;
 
-        if (!fs.existsSync(dataPath)) {
-            return NextResponse.json({ error: 'exam.json not found' }, { status: 404 });
+        const { sessionToken, examId, wpm, accuracy, totalKeystrokes } = await req.json();
+
+        if (!sessionToken || !examId) {
+            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
         }
 
-        const fileData = fs.readFileSync(dataPath, 'utf8');
-        const examData = JSON.parse(fileData);
+        const sessionRef = adminDb.collection('users').doc(uid).collection('sessions').doc(sessionToken);
+        const sessionSnap = await sessionRef.get();
 
-        // Find the unit and update sub-unit
-        let updated = false;
-        let isPassed = false;
+        if (!sessionSnap.exists || !sessionSnap.data()?.active) {
+            return NextResponse.json({ error: 'Invalid or expired session' }, { status: 400 });
+        }
 
-        if (examData.milestoneExams) {
-            examData.milestoneExams = examData.milestoneExams.map((exam: any) => {
-                if (exam.examId === Number(examId)) {
-                    updated = true;
+        const sessionData = sessionSnap.data()!;
+        const startTime = sessionData.startTime.toDate();
+        const endTime = new Date();
+        const elapsedTimeSeconds = Math.max(1, Math.round((endTime.getTime() - startTime.getTime()) / 1000));
 
-                    // Calculate "effective score" as the metric for a new high score
-                    const oldScore = (exam.wpm || 0) * (exam.accuracy || 0);
-                    const newScore = wpm * accuracy;
+        const minutes = elapsedTimeSeconds / 60;
+        const backendWpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
 
-                    // Overwrite if it's the first time finishing, OR if the new overall score is better
-                    const isBetterScore = newScore > oldScore;
-                    const passesCriteria = wpm >= 20;
+        // Verify frontend WPM isn't impossibly high OR wildly different from backend time
+        const validatedWpm = wpm !== undefined ? wpm : backendWpm;
 
-                    if (passesCriteria) {
-                        isPassed = true;
-                    }
+        if (validatedWpm > 300 || Math.abs(validatedWpm - backendWpm) > 15) {
+            return NextResponse.json({ error: 'INCOMPLETE_CONTENT', message: 'ข้อมูลไม่ถูกต้อง กรุณาทำแบบทดสอบให้ครบเวลา' }, { status: 400 });
+        }
 
-                    return {
-                        ...exam,
-                        isFinished: exam.isFinished || passesCriteria, // Do not un-finish tests
-                        wpm: (isBetterScore || !exam.isFinished) ? wpm : exam.wpm,
-                        accuracy: (isBetterScore || !exam.isFinished) ? accuracy : exam.accuracy,
-                        time: (isBetterScore || !exam.isFinished) ? time : exam.time
-                    };
-                }
-                return exam;
+        // Integrity Check: Exams must last ~120 seconds and have minimum keystrokes
+        // This prevents finishing a 2-minute test in 5 seconds via dev tools.
+        const MIN_EXAM_CHARS = 200; // 20 WPM * 2 minutes = 200 chars
+        if (elapsedTimeSeconds < 110 || totalKeystrokes < MIN_EXAM_CHARS) {
+            return NextResponse.json({
+                passed: false,
+                errorCode: 'INCOMPLETE_CONTENT',
+                message: 'ข้อมูลไม่ถูกต้อง กรุณาทำแบบทดสอบให้ครบเวลา (Incomplete Exam Session)'
             });
         }
 
-        if (!updated) {
-            return NextResponse.json({ error: 'Milestone Exam not found' }, { status: 404 });
+        // Deactivate session
+        await sessionRef.update({ active: false });
+
+        // Minimum performance requirement:
+        // WPM must be >= 8 AND session must be under 10 minutes
+        const MAX_ALLOWED_SECONDS = 600; // 10 minutes
+        const MIN_WPM = 8;
+        if (validatedWpm < MIN_WPM || elapsedTimeSeconds > MAX_ALLOWED_SECONDS) {
+            return NextResponse.json({ passed: false, wpm: validatedWpm, timeTaken: elapsedTimeSeconds });
         }
 
-        // Update timestamp
-        examData.lastUpdated = new Date().toISOString();
+        // Load User & Exam
+        const userRef = adminDb.collection('users').doc(uid);
+        const examRef = adminDb.collection('exams').doc(uid);
 
-        // Write back exam.json
-        fs.writeFileSync(dataPath, JSON.stringify(examData, null, 4));
+        const [userSnap, examSnap] = await Promise.all([
+            userRef.get(),
+            examRef.get()
+        ]);
 
-        // -- NEW: Update user.json with certificate if passed, AND update totalLearningTime --
-        const userPath = path.join(process.cwd(), 'data/json/user.json');
-        if (fs.existsSync(userPath)) {
-            const userData = JSON.parse(fs.readFileSync(userPath, 'utf8'));
-
-            // Certificate check
-            if (isPassed) {
-                if (!userData.earnedCertificates) {
-                    userData.earnedCertificates = {};
-                }
-                if (Array.isArray(userData.earnedCertificates)) {
-                    // Handle legacy array format if exists
-                    userData.earnedCertificates = {};
-                }
-                userData.earnedCertificates[`exam_${examId}`] = true;
-            }
-
-            // Learning Time update
-            if (!userData.stats) {
-                userData.stats = { totalLearningTime: 0 };
-            }
-            if (typeof userData.stats.totalLearningTime !== 'number') {
-                userData.stats.totalLearningTime = 0;
-            }
-
-            // Cap the added time to 20 mins (1200 seconds) in case of AFK
-            const timeToAdd = Math.min(Number(time) || 0, 1200);
-            userData.stats.totalLearningTime += timeToAdd;
-
-            fs.writeFileSync(userPath, JSON.stringify(userData, null, 4));
+        if (!userSnap.exists || !examSnap.exists) {
+            return NextResponse.json({ error: 'User data not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ success: true, message: 'Exam progress saved successfully' });
+        const userData = userSnap.data()!;
+        const examData = examSnap.data()!;
+
+        let isPassed = false;
+
+        let examIndex = (examData.milestoneExams || []).findIndex((e: any) => e.examId === Number(examId));
+
+        let existing: any;
+        if (examIndex === -1) {
+            // Create exam tracking if playing for the first time
+            if (!examData.milestoneExams) {
+                examData.milestoneExams = [];
+            }
+            existing = {
+                examId: Number(examId),
+                isFinished: false,
+                wpm: 0,
+                accuracy: 0,
+                time: 0
+            };
+            examData.milestoneExams.push(existing);
+            examIndex = examData.milestoneExams.length - 1;
+        } else {
+            existing = examData.milestoneExams[examIndex];
+        }
+
+        const oldWpm = existing.wpm || 0;
+        const oldAcc = existing.accuracy || 0;
+
+        // const isBetterWpm = validatedWpm > oldWpm;
+        // const isSameWpmBetterAcc = validatedWpm === oldWpm && accuracy > oldAcc;
+
+        const isBetterScore = validatedWpm * accuracy > oldWpm * oldAcc;
+
+        const passesCriteria = validatedWpm >= 20 && accuracy >= 80; // Add accuracy requirement for passing exam
+        if (passesCriteria) isPassed = true;
+
+        examData.milestoneExams[examIndex] = {
+            ...existing,
+            isFinished: existing.isFinished || passesCriteria, // Do not un-finish tests
+            wpm: isBetterScore || !existing.isFinished ? validatedWpm : existing.wpm,
+            accuracy: isBetterScore || !existing.isFinished ? accuracy : existing.accuracy,
+            time: isBetterScore || !existing.isFinished ? elapsedTimeSeconds : existing.time
+        };
+
+        const batch = adminDb.batch();
+        // Explicitly update specific field paths to guarantee array persistence
+        batch.update(examRef, {
+            milestoneExams: examData.milestoneExams,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        const currentExp = (userData.stats?.exp || 0) + (isPassed && !existing.isFinished ? 500 : 0);
+        const totalLearningTime = (userData.stats?.totalLearningTime || 0) + Math.min(elapsedTimeSeconds, 1200);
+
+        // Update Streak
+        const lastActiveDate = userData.lastActiveDate 
+            ? (userData.lastActiveDate.toDate ? userData.lastActiveDate.toDate() : new Date(userData.lastActiveDate))
+            : null;
+        const newStreak = calculateNewStreak(userData.stats?.streak || 0, lastActiveDate);
+
+        const userUpdate: any = {
+            'stats.exp': currentExp,
+            'stats.totalLearningTime': totalLearningTime,
+            'stats.streak': newStreak,
+            lastActiveDate: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (isPassed) {
+            userUpdate[`earnedCertificates.exam_${examId}`] = true;
+        }
+
+        batch.update(userRef, userUpdate);
+
+        await batch.commit();
+
+        return NextResponse.json({ success: true, wpm: validatedWpm, accuracy, timeTaken: elapsedTimeSeconds });
     } catch (error) {
         console.error('Error saving exam progress:', error);
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+        return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
 }

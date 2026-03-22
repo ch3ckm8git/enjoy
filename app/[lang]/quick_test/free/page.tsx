@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { dictionary, Lang } from "@/lib/i18n";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useAuth } from '@/components/providers/AuthProvider';
 
 type KeyDef = {
     base?: string; shift?: string; label?: string; span: number; align?: 'left' | 'right' | 'center'; isSpecial?: true; spacer?: true;
@@ -61,9 +62,12 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
     const [isLessonComplete, setIsLessonComplete] = useState(false);
     const [userInput, setUserInput] = useState("");
     const [hasError, setHasError] = useState(false);
+    const [sessionToken, setSessionToken] = useState<string | null>(null);
+    const { user } = useAuth();
     const [activeKeyPress, setActiveKeyPress] = useState<string | null>(null);
     const [totalKeystrokes, setTotalKeystrokes] = useState(0);
     const [totalErrors, setTotalErrors] = useState(0);
+    const [completedChars, setCompletedChars] = useState(0); // Anti-cheat state
     const inputRef = useRef<HTMLInputElement>(null);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const typeSound = useRef<HTMLAudioElement | null>(null);
@@ -138,6 +142,7 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
 
     useEffect(() => {
         if (userInputArr.length === currentTextArr.length && currentTextArr.length > 0) {
+            setCompletedChars(prev => prev + currentTextArr.length);
             setCurrentDrillIndex(prev => prev + 1);
             setUserInput("");
         }
@@ -158,21 +163,26 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
 
     // Save practice time to totalLearningTime
     useEffect(() => {
-        if (isLessonComplete) {
-            fetch('/api/add-time', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    timeToAddSeconds: timeParam,
-                    isFreeType: true
-                })
-            }).catch(err => console.error("Failed to add learning time", err));
+        if (isLessonComplete && sessionToken && user) {
+            user.getIdToken().then(token => {
+                fetch('/api/add-time', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken,
+                        timeToAddSeconds: timeParam,
+                        isFreeType: true,
+                        totalKeystrokes: completedChars + userInputArr.length
+                    })
+                }).catch(err => console.error("Failed to add learning time", err));
+            });
         }
-    }, [isLessonComplete, timeParam]);
+    }, [isLessonComplete, sessionToken, user, timeParam, completedChars, userInputArr.length]);
 
     if (isLessonComplete) {
+        const correctKeystrokes = completedChars + userInputArr.length;
         const minutes = timeParam / 60;
-        const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+        const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
         let accuracy = totalKeystrokes > 0 ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100) : 100;
         if (accuracy < 0) accuracy = 0;
 
@@ -189,15 +199,7 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
                         isPractice={true}
                         lang={lang}
                         onRestart={() => {
-                            setIsLessonComplete(false);
-                            setIsTestStarted(false);
-                            setTimeLeft(timeParam);
-                            setCurrentDrillIndex(0);
-                            setDrills(generateMoreDrills(fullPool, 15));
-                            setUserInput("");
-                            setTotalKeystrokes(0);
-                            setTotalErrors(0);
-                            inputRef.current?.focus();
+                            window.location.reload();
                         }}
                         onContinue={() => {
                             router.push(`/${lang}/quick_test`);
@@ -316,7 +318,23 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
                     onChange={(e) => {
                         const val = Array.from(e.target.value);
                         if (val.length < userInputArr.length) return;
-                        if (!isTestStarted) setIsTestStarted(true);
+                        if (!isTestStarted) {
+                            setIsTestStarted(true);
+                            if (user) {
+                                user.getIdToken().then(token => {
+                                    fetch('/api/start-session', {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ type: 'freeType' })
+                                    })
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            if (data.sessionToken) setSessionToken(data.sessionToken);
+                                        })
+                                        .catch(console.error);
+                                }).catch(console.error);
+                            }
+                        }
                         setTotalKeystrokes(prev => prev + 1);
                         const newChar = val[val.length - 1];
                         setActiveKeyPress(newChar); setTimeout(() => setActiveKeyPress(null), 150);

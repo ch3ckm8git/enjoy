@@ -12,6 +12,7 @@ interface UserProfileCardProps {
   lessonsProgress: number;
   examsProgress: number;
   lang?: any;
+  imgUrl?: string | null;
 }
 
 export function UserProfileCard({
@@ -23,6 +24,7 @@ export function UserProfileCard({
   lessonsProgress,
   examsProgress,
   lang = "en",
+  imgUrl,
 }: UserProfileCardProps) {
 
   const langData = dictionary[lang as Lang];
@@ -37,7 +39,7 @@ export function UserProfileCard({
       <div className="relative z-10 flex flex-col items-center text-center mb-6">
         <div className="w-32 h-32 rounded-full p-1 bg-gradient-to-tr from-indigo-600 to-purple-500 mb-3 shadow-md relative transform -rotate-3 hover:rotate-0 transition-transform duration-300">
           <Image
-            src="https://picsum.photos/200/200"
+            src={imgUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"}
             alt="Student profile picture"
             fill
             className="rounded-full object-cover border-4 border-white"

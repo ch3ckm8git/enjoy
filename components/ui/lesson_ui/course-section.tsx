@@ -2,26 +2,25 @@
 
 
 import { dictionary, Lang } from '@/lib/i18n';
-import userLessonData from '@/data/json/lesson.json';
 import lessonsData from '@/data/json/output_reindexed_with_test.json';
 import { ArrowRight, Check, Percent, Play } from 'lucide-react';
 import Link from 'next/link';
 
-export function CourseSection({ lang }: { lang: Lang }) {
+export function CourseSection({ lang, userLessonData }: { lang: Lang, userLessonData: any }) {
   const t = dictionary[lang].lessons.courseSection;
-  const units = userLessonData.units;
+  const units = userLessonData?.units || [];
   const lessons = lessonsData as any;
 
   return (
     <div className="space-y-6 mt-8">
-      {units.map((unitData, unitIndex) => {
+      {units.map((unitData: any, unitIndex: any) => {
         const unitInfo = lessons[`unit_${unitData.unitId}`];
         const rawTitle = unitInfo?.title || `Unit ${unitData.unitId}`;
         let title2 = unitInfo?.title2
 
         const unitTitle = (lang === 'en' && title2) ? title2 : rawTitle;
 
-        const completedCount = unitData.subUnits.filter(su => su.isFinished).length;
+        const completedCount = unitData.subUnits.filter((su: any) => su.isFinished).length;
         const totalCount = unitData.subUnits.length;
         const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
 
@@ -64,10 +63,10 @@ export function CourseSection({ lang }: { lang: Lang }) {
 
             {/* Subunits List */}
             <div className="p-4 bg-white space-y-3">
-              {unitData.subUnits.map((sub, idx) => {
+              {unitData.subUnits.map((sub: any, idx: any) => {
                 const isFinished = sub.isFinished;
                 // Find ONLY the absolute first unfinished item to be the current lesson
-                const firstUnfinishedIdx = unitData.subUnits.findIndex(su => !su.isFinished);
+                const firstUnfinishedIdx = unitData.subUnits.findIndex((su: any) => !su.isFinished);
                 const isCurrent = idx === firstUnfinishedIdx;
 
                 const subUnitTitles = (dictionary[lang].lessons as any).sub_unit_title;
@@ -134,7 +133,7 @@ export function CourseSection({ lang }: { lang: Lang }) {
 
             {/* Segmented Progress Bar Line */}
             <div className="w-full flex h-2 gap-[1px]">
-              {unitData.subUnits.map((su) => {
+              {unitData.subUnits.map((su: any) => {
                 const isFinished = su.isFinished;
                 const timeSec = su.time || 0;
                 const timeFormatted = `${Math.floor(timeSec / 60)}:${((timeSec || 0) % 60).toString().padStart(2, '0')}`;

@@ -3,12 +3,14 @@ import React, { useState, useEffect, useRef } from "react";
 import TypingHands from "@/components/practice/TypingHands";
 import { ExamResultBoard } from "@/components/ui/lesson_ui/ExamResultBoard";
 import quickTestData from "@/data/json/quick_test.json";
-import userLessonData from "@/data/json/lesson.json";
 import { keyToFinger } from "@/lib/utils";
 import { notFound, useRouter } from "next/navigation";
 import { dictionary, Lang } from "@/lib/i18n";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { useAuth } from '@/components/providers/AuthProvider';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 
 type KeyDef = {
     base?: string;
@@ -77,6 +79,49 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
     const [activeKeyPress, setActiveKeyPress] = useState<string | null>(null);
     const [totalKeystrokes, setTotalKeystrokes] = useState(0);
     const [totalErrors, setTotalErrors] = useState(0);
+    const [completedChars, setCompletedChars] = useState(0); // Anti-cheat state
+    const [sessionToken, setSessionToken] = useState<string | null>(null);
+    const [serverWpm, setServerWpm] = useState<number | null>(null);
+    const [serverAccuracy, setServerAccuracy] = useState<number | null>(null);
+    const [serverTime, setServerTime] = useState<number | null>(null);
+    const [errorDetail, setErrorDetail] = useState<string | null>(null);
+    const { user } = useAuth();
+
+    // Security Authorization
+    const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        if (!user?.uid) return;
+        getDoc(doc(db, "lessons", user.uid)).then(docSnap => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                const lessonUnits = data.units || [];
+
+                const isRangeFinished = (startUnit: number, endUnit: number) => {
+                    const rangeUnits = lessonUnits.filter((u: any) => u.unitId >= startUnit && u.unitId <= endUnit);
+                    const totalSubUnits = rangeUnits.reduce((acc: number, u: any) => acc + u.subUnits.length, 0);
+                    const finishedSubUnits = rangeUnits.reduce((acc: number, u: any) => acc + u.subUnits.filter((su: any) => su.isFinished).length, 0);
+                    return totalSubUnits > 0 && finishedSubUnits >= totalSubUnits;
+                };
+
+                let authorized = false;
+                if (examId === 1) authorized = isRangeFinished(1, 6);
+                else if (examId === 2) authorized = isRangeFinished(7, 12);
+                else if (examId === 3) authorized = isRangeFinished(1, 17);
+
+                if (authorized) {
+                    setIsAuthorized(true);
+                } else {
+                    router.replace(`/${lang}/quick_test`);
+                }
+            } else {
+                router.replace(`/${lang}/quick_test`);
+            }
+        }).catch(err => {
+            console.error("Auth check failed:", err);
+            router.replace(`/${lang}/quick_test`);
+        });
+    }, [user, examId, lang, router]);
 
     const [lessonTitle, setLessonTitle] = useState("");
 
@@ -163,6 +208,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
     useEffect(() => {
         if (userInputArr.length === currentTextArr.length && currentTextArr.length > 0) {
             // Next line
+            setCompletedChars(prev => prev + currentTextArr.length);
             setCurrentDrillIndex(prev => prev + 1);
             setUserInput("");
         }
@@ -187,33 +233,53 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
 
     // Save Progress logic when exam complete (timer hits 0)
     useEffect(() => {
-        if (isLessonComplete) {
+        if (isLessonComplete && sessionToken && user) {
             const timeTakenSec = EXAM_DURATION_SECONDS;
             const minutes = timeTakenSec / 60;
-            const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+            const correctKeystrokes = completedChars + userInputArr.length;
+            const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
 
             let accuracy = totalKeystrokes > 0
                 ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100)
                 : 100;
             if (accuracy < 0) accuracy = 0;
 
-            fetch('/api/exam-progress', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    examId: examId,
-                    wpm,
-                    accuracy,
-                    time: timeTakenSec
+            user.getIdToken().then(token => {
+                fetch('/api/exam-progress', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        sessionToken,
+                        examId: examId,
+                        wpm,
+                        accuracy,
+                        totalKeystrokes: correctKeystrokes,
+                        time: timeTakenSec
+                    })
                 })
-            }).catch(err => console.error("Failed to save progress", err));
+                    .then(res => res.json())
+                    .then(data => {
+                        const tScore = (dictionary[lang as Lang].lessons as any).scoreboard;
+                        if (data.success) {
+                            if (data.wpm !== undefined) setServerWpm(data.wpm);
+                            if (data.accuracy !== undefined) setServerAccuracy(data.accuracy);
+                            if (data.timeTaken !== undefined) setServerTime(data.timeTaken);
+                        } else if (data.errorCode === 'INCOMPLETE_CONTENT') {
+                            setErrorDetail(tScore.incompleteContent);
+                        } else if (data.error === 'INCOMPLETE_CONTENT') {
+                            setErrorDetail(tScore.incompleteContent);
+                        }
+                    })
+                    .catch(err => console.error("Failed to save progress", err));
+            });
         }
-    }, [isLessonComplete, totalKeystrokes, totalErrors, examId]);
+    }, [isLessonComplete, totalKeystrokes, totalErrors, examId, sessionToken, user, completedChars, userInputArr.length]);
 
     if (isLessonComplete) {
         const timeTakenSec = EXAM_DURATION_SECONDS;
         const minutes = timeTakenSec / 60;
-        const wpm = minutes > 0 ? Math.round((totalKeystrokes / 5) / minutes) : 0;
+        const correctKeystrokes = completedChars + userInputArr.length;
+        const wpm = minutes > 0 ? Math.round((correctKeystrokes / 5) / minutes) : 0;
         let accuracy = totalKeystrokes > 0 ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100) : 100;
         if (accuracy < 0) accuracy = 0;
 
@@ -221,23 +287,16 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
             <div className={`h-screen w-full bg-slate-50 flex flex-col items-center justify-center p-4 transition-colors duration-1000 ${wpm > 10 ? 'bg-indigo-50/50' : 'bg-rose-50/50'}`}>
                 <div className="w-full max-w-4xl">
                     <ExamResultBoard
-                        wpm={wpm}
-                        accuracy={accuracy}
-                        timeTaken={timeTakenSec}
+                        wpm={serverWpm !== null ? serverWpm : wpm}
+                        accuracy={serverAccuracy !== null ? serverAccuracy : accuracy}
+                        timeTaken={serverTime !== null ? serverTime : timeTakenSec}
                         examTitle={lessonTitle}
                         examId={examId}
-                        isPassed={wpm >= 20}
+                        isPassed={serverWpm !== null ? serverWpm >= 20 : wpm >= 20}
                         lang={lang as Lang}
+                        errorDetail={errorDetail}
                         onRestart={() => {
-                            setIsLessonComplete(false);
-                            setIsTestStarted(false);
-                            setTimeLeft(EXAM_DURATION_SECONDS);
-                            setCurrentDrillIndex(0);
-                            setDrills(generateMoreDrills(poolDataObj.pool, 15));
-                            setUserInput("");
-                            setTotalKeystrokes(0);
-                            setTotalErrors(0);
-                            inputRef.current?.focus();
+                            window.location.reload();
                         }}
                         onContinue={() => {
                             router.push(`/${lang}/quick_test`);
@@ -245,8 +304,17 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                         onCertificate={() => {
                             alert("Print Certificate Flow coming soon!");
                         }}
+                        isProcessing={false}
                     />
                 </div>
+            </div>
+        );
+    }
+
+    if (isAuthorized === null) {
+        return (
+            <div className="h-screen w-full bg-slate-50 flex items-center justify-center p-4 relative z-50">
+                <Loader2 className="w-8 h-8 animate-spin text-slate-400 gap-2 flex" />
             </div>
         );
     }
@@ -415,7 +483,23 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                         if (val.length < userInputArr.length) return; // Handled by Backspace
 
                         // Start test on first key stroke!
-                        if (!isTestStarted) setIsTestStarted(true);
+                        if (!isTestStarted) {
+                            setIsTestStarted(true);
+                            if (user) {
+                                user.getIdToken().then(token => {
+                                    fetch('/api/start-session', {
+                                        method: 'POST',
+                                        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ type: 'exam', examId })
+                                    })
+                                        .then(res => res.json())
+                                        .then(data => {
+                                            if (data.sessionToken) setSessionToken(data.sessionToken);
+                                        })
+                                        .catch(console.error);
+                                }).catch(console.error);
+                            }
+                        }
 
                         setTotalKeystrokes(prev => prev + 1);
 

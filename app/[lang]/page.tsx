@@ -15,6 +15,8 @@ import { LanguageSwitcher } from "@/components/ui/home_ui/LanguageSwitcher";
 import TypingAnimation from "@/components/ui/home_ui/TypingAnimation";
 import { SiteHeader } from "@/components/ui/home_ui/SiteHeader";
 
+import HeroAction from "@/components/ui/home_ui/HeroAction";
+
 export default async function HomePage({
   params,
 }: {
@@ -48,9 +50,7 @@ export default async function HomePage({
             </div>
 
             <div className="flex flex-wrap gap-4">
-              <Link href={`/${lang}/signup`} className="h-14 px-8 bg-[#10b981] text-white rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-emerald-600 transition-all shadow-lg shadow-emerald-500/20">
-                {t.hero.start} <Bolt size={20} fill="currentColor" />
-              </Link>
+              <HeroAction lang={lang} startText={t.hero.start} />
             </div>
           </div>
 
