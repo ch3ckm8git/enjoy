@@ -115,7 +115,7 @@ export default function QuickTestClient({ lang }: { lang: Lang }) {
                         <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-4 content-evenly">
                             <StatCard
                                 title={t.lessons.dailyStreak}
-                                value={"0" + " " + t.lessons.days}
+                                value={(userData.stats.streak || "0") + " " + t.lessons.days}
                                 icon="fire"
                                 color="orange"
                             />
