@@ -106,6 +106,7 @@ export const dictionary = {
             courses: "บทเรียนของฉัน",
             quick_test: "แบบทดสอบ",
             profile: "โปรไฟล์ของฉัน",
+            performance: "สถิติ",
         },
         profile: {
             title: "โปรไฟล์ของฉัน",
@@ -410,6 +411,7 @@ export const dictionary = {
             courses: "My Courses",
             quick_test: "Exam",
             profile: "My Profile",
+            performance: "Performance",
         },
         profile: {
             title: "My Profile",

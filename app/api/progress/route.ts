@@ -194,6 +194,18 @@ export async function POST(req: Request) {
             lastActiveDate: admin.firestore.FieldValue.serverTimestamp()
         });
 
+        // Record typing history
+        const historyRef = adminDb.collection('users').doc(uid).collection('typingHistory').doc();
+        batch.set(historyRef, {
+            wpm: validatedWpm,
+            accuracy,
+            timeTaken: elapsedTimeSeconds,
+            unitId: Number(unitId),
+            subId: Number(subId),
+            type: 'lesson',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
         await batch.commit();
 
         return NextResponse.json({ success: true, wpm: validatedWpm, timeTaken: elapsedTimeSeconds, xpGained: xpReward });

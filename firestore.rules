@@ -12,6 +12,11 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read, write: if isSignedIn() && isOwner(userId);
+
+      match /typingHistory/{historyId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if false;
+      }
     }
 
     match /lessons/{userId} {

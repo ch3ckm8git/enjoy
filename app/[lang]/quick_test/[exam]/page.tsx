@@ -84,6 +84,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
     const [serverWpm, setServerWpm] = useState<number | null>(null);
     const [serverAccuracy, setServerAccuracy] = useState<number | null>(null);
     const [serverTime, setServerTime] = useState<number | null>(null);
+    const [serverIsPassed, setServerIsPassed] = useState<boolean | null>(null);
     const [errorDetail, setErrorDetail] = useState<string | null>(null);
     const { user } = useAuth();
 
@@ -264,6 +265,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                             if (data.wpm !== undefined) setServerWpm(data.wpm);
                             if (data.accuracy !== undefined) setServerAccuracy(data.accuracy);
                             if (data.timeTaken !== undefined) setServerTime(data.timeTaken);
+                            if (data.isPassed !== undefined) setServerIsPassed(data.isPassed);
                         } else if (data.errorCode === 'INCOMPLETE_CONTENT') {
                             setErrorDetail(tScore.incompleteContent);
                         } else if (data.error === 'INCOMPLETE_CONTENT') {
@@ -292,7 +294,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                         timeTaken={serverTime !== null ? serverTime : timeTakenSec}
                         examTitle={lessonTitle}
                         examId={examId}
-                        isPassed={serverWpm !== null ? serverWpm >= 20 : wpm >= 20}
+                        isPassed={serverIsPassed !== null ? serverIsPassed : wpm >= 20}
                         lang={lang as Lang}
                         errorDetail={errorDetail}
                         onRestart={() => {
@@ -384,7 +386,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                 {/* Keyboard Visual */}
                 <div className="w-full max-w-4xl bg-[#cbd5e1] p-2 sm:p-3 rounded-2xl shadow-xl border-b-4 border-slate-400 mb-4 overflow-hidden relative">
                     {/* DEBUG BUTTON */}
-                    <button
+                    {/* <button
                         onClick={(e) => {
                             e.stopPropagation();
                             setTotalKeystrokes(180);
@@ -394,7 +396,7 @@ export default function ExamPage({ params }: { params: Promise<{ lang: string; e
                         }}
                         className="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-1 rounded-md opacity-50 hover:opacity-100 z-50">
                         Dev: Finish Timer
-                    </button>
+                    </button> */}
                     <div className="grid grid-cols-29 auto-rows-fr gap-1 sm:gap-1.5 w-full">
                         {fullKeyboardLayout.flatMap((row, i) =>
                             row.map((key, j) => {

@@ -14,6 +14,7 @@ import {
   GraduationCap,
   Award,
   User,
+  TrendingUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { dictionary, Lang } from '@/lib/i18n';
@@ -27,6 +28,7 @@ export function Sidebar({ lang }: { lang: Lang }) {
     { name: t.sidebar.courses, href: `/${lang}/lessons`, icon: BookOpen },
     { name: t.sidebar.quick_test, href: `/${lang}/quick_test`, icon: ClipboardList },
     { name: t.sidebar.profile, href: `/${lang}/profile`, icon: User },
+    { name: t.sidebar.performance, href: `/${lang}/performance`, icon: TrendingUp },
   ];
 
   return (

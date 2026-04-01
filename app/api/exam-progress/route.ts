@@ -42,10 +42,9 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'INCOMPLETE_CONTENT', message: 'ข้อมูลไม่ถูกต้อง กรุณาทำแบบทดสอบให้ครบเวลา' }, { status: 400 });
         }
 
-        // Integrity Check: Exams must last ~120 seconds and have minimum keystrokes
+        // Integrity Check: Exams must last ~120 seconds.
         // This prevents finishing a 2-minute test in 5 seconds via dev tools.
-        const MIN_EXAM_CHARS = 200; // 20 WPM * 2 minutes = 200 chars
-        if (elapsedTimeSeconds < 110 || totalKeystrokes < MIN_EXAM_CHARS) {
+        if (elapsedTimeSeconds < 110) {
             return NextResponse.json({
                 passed: false,
                 errorCode: 'INCOMPLETE_CONTENT',
@@ -111,7 +110,7 @@ export async function POST(req: Request) {
 
         const isBetterScore = validatedWpm * accuracy > oldWpm * oldAcc;
 
-        const passesCriteria = validatedWpm >= 20 && accuracy >= 80; // Add accuracy requirement for passing exam
+        const passesCriteria = validatedWpm >= 20;
         if (passesCriteria) isPassed = true;
 
         examData.milestoneExams[examIndex] = {
@@ -151,9 +150,20 @@ export async function POST(req: Request) {
 
         batch.update(userRef, userUpdate);
 
+        // Record typing history
+        const historyRef = adminDb.collection('users').doc(uid).collection('typingHistory').doc();
+        batch.set(historyRef, {
+            wpm: validatedWpm,
+            accuracy,
+            timeTaken: elapsedTimeSeconds,
+            examId: Number(examId),
+            type: 'exam',
+            createdAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
         await batch.commit();
 
-        return NextResponse.json({ success: true, wpm: validatedWpm, accuracy, timeTaken: elapsedTimeSeconds });
+        return NextResponse.json({ success: true, wpm: validatedWpm, accuracy, timeTaken: elapsedTimeSeconds, isPassed });
     } catch (error) {
         console.error('Error saving exam progress:', error);
         return NextResponse.json({ error: 'Server error' }, { status: 500 });
