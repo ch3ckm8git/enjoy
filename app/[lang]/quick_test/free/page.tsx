@@ -259,14 +259,14 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
                 </div>
 
                 <div className="w-full max-w-4xl bg-[#cbd5e1] p-2 sm:p-3 rounded-2xl shadow-xl border-b-4 border-slate-400 mb-4 overflow-hidden relative">
-                    <button
+                    {/* <button
                         onClick={(e) => {
                             e.stopPropagation();
                             setTotalKeystrokes(180); setTotalErrors(2); setTimeLeft(0); setIsLessonComplete(true);
                         }}
                         className="absolute top-2 right-2 bg-red-500 text-white text-[10px] px-2 py-1 rounded-md opacity-50 hover:opacity-100 z-50">
                         Dev: Finish Timer
-                    </button>
+                    </button> */}
                     <div className="grid grid-cols-29 auto-rows-fr gap-1 sm:gap-1.5 w-full">
                         {fullKeyboardLayout.flatMap((row, i) =>
                             row.map((key, j) => {
