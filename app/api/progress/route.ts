@@ -157,7 +157,7 @@ export async function POST(req: Request) {
             else if (unitId >= 14 && unitId <= 17) xpReward = 300;
             else xpReward = 100;
         } else {
-            // Replay minimal reward
+            // Replay minimal reward 10percent
             xpReward = Math.round((unitId <= 4 ? 100 : unitId <= 9 ? 150 : unitId <= 13 ? 200 : 300) * 0.1);
         }
 
@@ -182,7 +182,7 @@ export async function POST(req: Request) {
         const totalLearningTime = (userData.stats?.totalLearningTime || 0) + Math.min(elapsedTimeSeconds, 1200);
 
         // Update Streak
-        const lastActiveDate = userData.lastActiveDate 
+        const lastActiveDate = userData.lastActiveDate
             ? (userData.lastActiveDate.toDate ? userData.lastActiveDate.toDate() : new Date(userData.lastActiveDate))
             : null;
         const newStreak = calculateNewStreak(userData.stats?.streak || 0, lastActiveDate);
