@@ -14,7 +14,7 @@ export async function POST(req: Request) {
         const decodedToken = await adminAuth.verifyIdToken(token);
         const uid = decodedToken.uid;
 
-        const { sessionToken, timeToAddSeconds, isFreeType, totalKeystrokes } = await req.json();
+        const { sessionToken, timeToAddSeconds, isFreeType, totalKeystrokes, accuracy } = await req.json();
 
         if (!sessionToken || !timeToAddSeconds) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
@@ -80,6 +80,18 @@ export async function POST(req: Request) {
             'stats.streak': newStreak,
             lastActiveDate: admin.firestore.FieldValue.serverTimestamp()
         });
+
+        if (isFreeType && wpm >= 8) {
+            const historyRef = adminDb.collection('users').doc(uid).collection('typingHistory').doc();
+            await historyRef.set({
+                wpm,
+                accuracy: typeof accuracy === 'number' ? accuracy : 100,
+                timeTaken: actualTimeToAdd,
+                type: 'free',
+                timeId: timeToAddSeconds,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            });
+        }
 
         return NextResponse.json({ success: true, updatedTime: totalLearningTime, xpGained: xpReward, wpm });
     } catch (error) {

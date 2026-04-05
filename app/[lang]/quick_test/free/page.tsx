@@ -161,9 +161,11 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
         }
     }
 
-    // Save practice time to totalLearningTime
     useEffect(() => {
         if (isLessonComplete && sessionToken && user) {
+            const acc = totalKeystrokes > 0 ? Math.round(((totalKeystrokes - totalErrors) / totalKeystrokes) * 100) : 100;
+            const finalAcc = acc < 0 ? 0 : acc;
+
             user.getIdToken().then(token => {
                 fetch('/api/add-time', {
                     method: 'POST',
@@ -172,12 +174,13 @@ function FreeTypeComponent({ lang }: { lang: Lang }) {
                         sessionToken,
                         timeToAddSeconds: timeParam,
                         isFreeType: true,
-                        totalKeystrokes: completedChars + userInputArr.length
+                        totalKeystrokes: completedChars + userInputArr.length,
+                        accuracy: finalAcc
                     })
                 }).catch(err => console.error("Failed to add learning time", err));
             });
         }
-    }, [isLessonComplete, sessionToken, user, timeParam, completedChars, userInputArr.length]);
+    }, [isLessonComplete, sessionToken, user, timeParam, completedChars, userInputArr.length, totalKeystrokes, totalErrors]);
 
     if (isLessonComplete) {
         const correctKeystrokes = completedChars + userInputArr.length;

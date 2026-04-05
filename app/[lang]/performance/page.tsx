@@ -11,28 +11,30 @@ import { db } from '@/lib/firebase';
 import { collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 import Loading from '@/app/[lang]/loading';
 import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer,
 } from 'recharts';
 
 const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
         const data = payload[0].payload;
-        
+
         const wpmPayload = payload.find((p: any) => p.dataKey === 'wpm');
         const accPayload = payload.find((p: any) => p.dataKey === 'accuracy');
 
         let title = data.dateStr;
         if (data.type === 'lesson' && data.unitId !== undefined && data.subId !== undefined) {
-             title = `${title} • Lesson ${data.unitId}.${data.subId}`;
+            title = `${title} • Lesson ${data.unitId}.${data.subId}`;
         } else if (data.type === 'exam' && data.examId !== undefined) {
-             title = `${title} • Exam ${data.examId}`;
+            title = `${title} • Exam ${data.examId}`;
+        } else if (data.type === 'free') {
+            title = `${title} • Free Type`;
         }
 
         return (
@@ -66,6 +68,8 @@ const CustomDot = (props: any) => {
         label = `${payload.unitId}.${payload.subId}`;
     } else if (payload.type === 'exam' && payload.examId !== undefined) {
         label = `E${payload.examId}`;
+    } else if (payload.type === 'free') {
+        label = `F`;
     }
 
     return (
@@ -93,7 +97,7 @@ export default function PerformancePage() {
     const lang = pathname.split('/')[1] as Lang;
     const t = dictionary[lang];
     const { user } = useAuth();
-    
+
     const [historyData, setHistoryData] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -104,7 +108,7 @@ export default function PerformancePage() {
                 const historyRef = collection(db, 'users', user.uid, 'typingHistory');
                 const q = query(historyRef, orderBy('createdAt', 'desc'), limit(30));
                 const querySnapshot = await getDocs(q);
-                
+
                 const data: any[] = [];
                 querySnapshot.forEach((doc) => {
                     const d = doc.data();
@@ -114,7 +118,7 @@ export default function PerformancePage() {
                             wpm: d.wpm,
                             accuracy: d.accuracy,
                             timeTaken: d.timeTaken,
-                            dateStr: d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' }) : new Date(d.createdAt).toLocaleDateString(),
+                            dateStr: d.createdAt.toDate ? d.createdAt.toDate().toLocaleDateString(lang === 'th' ? 'th-TH' : 'en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : new Date(d.createdAt).toLocaleDateString(),
                             timestamp: d.createdAt.toDate ? d.createdAt.toDate().getTime() : new Date(d.createdAt).getTime(),
                             type: d.type,
                             unitId: d.unitId,
@@ -123,7 +127,7 @@ export default function PerformancePage() {
                         });
                     }
                 });
-                
+
                 // Sort ascending by timestamp so oldest is left, newest is right
                 data.sort((a, b) => a.timestamp - b.timestamp);
                 setHistoryData(data);
@@ -182,7 +186,7 @@ export default function PerformancePage() {
                             </div>
 
                             {/* Stats Summary Cards */}
-                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                                 <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl shadow-slate-200/50 rounded-3xl p-6 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-sky-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-50 group-hover:opacity-100 transition-opacity" />
                                     <div className="relative z-10 flex items-center gap-4">
@@ -226,7 +230,7 @@ export default function PerformancePage() {
                             {/* Chart Container */}
                             <div className="bg-white/80 backdrop-blur-xl border border-white/40 shadow-xl shadow-slate-200/50 rounded-3xl p-6 md:p-8">
                                 <h3 className="text-xl font-bold text-slate-800 mb-6 font-display">{lang === 'th' ? 'การฝึกพิมพ์ล่าสุด (30 รอบ)' : 'Recent Sessions (Last 30)'}</h3>
-                                
+
                                 {historyData.length === 0 ? (
                                     <div className="h-80 flex flex-col items-center justify-center text-slate-500">
                                         <Clock className="w-12 h-12 mb-4 opacity-50" />
@@ -241,7 +245,7 @@ export default function PerformancePage() {
                                                 <XAxis dataKey="dateStr" stroke="#94a3b8" fontSize={11} tickMargin={12} minTickGap={30} />
                                                 <YAxis yAxisId="left" stroke="#6366f1" fontSize={11} domain={['dataMin - 5', 'dataMax + 10']} axisLine={false} tickLine={false} />
                                                 <YAxis yAxisId="right" orientation="right" stroke="#10b981" fontSize={11} domain={[0, 100]} axisLine={false} tickLine={false} />
-                                                <Tooltip 
+                                                <Tooltip
                                                     isAnimationActive={false}
                                                     position={{ y: 0 }}
                                                     cursor={{ stroke: '#cbd5e1', strokeWidth: 1, strokeDasharray: '4 4', fill: 'transparent' }}
